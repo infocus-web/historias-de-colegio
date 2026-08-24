@@ -49,3 +49,4 @@ entorno `ADMIN_PASSWORD`.
 - `ADMIN_PASSWORD` (pendiente) — contraseña del panel interno `/admin`. Configurarla en
   Vercel → Project Settings → Environment Variables (no hay forma de setearla de forma
   remota, hay que cargarla ahí a mano).
+ 
