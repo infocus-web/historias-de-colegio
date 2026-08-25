@@ -1,39 +1,39 @@
 @import url("https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&display=swap");
 
 :root {
-  --bg: oklch(97.2% 0.012 85);
-  --bg-alt: oklch(93.5% 0.018 84);
-  --ink: oklch(24% 0.024 45);
-  --ink-soft: oklch(52% 0.026 55);
-  --paper: oklch(99.1% 0.006 85);
-  --accent: oklch(57.3% 0.132 42);
-  --accent-ink: oklch(98.5% 0.008 85);
-  --accent-dark: oklch(45% 0.128 40);
-  --gold: oklch(76% 0.11 75);
-  --line: oklch(90% 0.018 82);
-  --ring: oklch(57.3% 0.132 42);
+  --bg: oklch(98.4% 0.002 250);
+  --bg-alt: oklch(94.5% 0.004 250);
+  --ink: oklch(21% 0.006 260);
+  --ink-soft: oklch(48% 0.008 260);
+  --paper: oklch(99.3% 0.001 250);
+  --accent: oklch(74% 0.135 85);
+  --accent-ink: oklch(20% 0.03 85);
+  --accent-dark: oklch(46% 0.12 75);
+  --gold: oklch(74% 0.135 85);
+  --line: oklch(89% 0.004 250);
+  --ring: oklch(74% 0.135 85);
   --good: #3e7d51;
-  --gradient-warm: linear-gradient(140deg, oklch(97.8% 0.014 88), oklch(94% 0.03 72));
-  --shadow: 0 1px 2px oklch(40% 0.05 45 / 0.06), 0 24px 60px -24px oklch(45% 0.09 40 / 0.28);
+  --gradient-warm: linear-gradient(140deg, oklch(99% 0.001 250), oklch(93% 0.03 85));
+  --shadow: 0 1px 2px oklch(20% 0.008 260 / 0.06), 0 24px 60px -24px oklch(20% 0.008 260 / 0.16);
   --radius: 1.5rem;
   --radius-sm: 0.85rem;
   color-scheme: light;
 }
 
 :root.dark {
-  --bg: oklch(19% 0.014 45);
-  --bg-alt: oklch(29% 0.02 45);
-  --ink: oklch(95.5% 0.012 85);
-  --ink-soft: oklch(78% 0.018 70);
-  --paper: oklch(23.5% 0.017 45);
-  --accent: oklch(72% 0.125 45);
-  --accent-ink: oklch(19% 0.02 42);
-  --accent-dark: oklch(80% 0.11 48);
-  --gold: oklch(75% 0.13 85);
-  --line: oklch(36% 0.02 50);
-  --ring: oklch(72% 0.125 45);
+  --bg: oklch(19% 0.006 260);
+  --bg-alt: oklch(26% 0.007 260);
+  --ink: oklch(95% 0.004 260);
+  --ink-soft: oklch(74% 0.006 260);
+  --paper: oklch(23% 0.007 260);
+  --accent: oklch(78% 0.13 85);
+  --accent-ink: oklch(18% 0.03 85);
+  --accent-dark: oklch(86% 0.11 88);
+  --gold: oklch(78% 0.13 85);
+  --line: oklch(33% 0.008 260);
+  --ring: oklch(78% 0.13 85);
   --good: #6fbf83;
-  --gradient-warm: linear-gradient(140deg, oklch(24% 0.02 45), oklch(19% 0.014 45));
+  --gradient-warm: linear-gradient(140deg, oklch(23% 0.008 260), oklch(18% 0.006 260));
   --shadow: 0 1px 2px oklch(0% 0 0 / 0.4), 0 24px 60px -24px oklch(0% 0 0 / 0.6);
   color-scheme: dark;
 }
@@ -920,3 +920,46 @@ input { font-family: inherit; }
   transition: transform .15s;
 }
 .whatsapp-float:hover { transform: scale(1.06); }
+
+
+/* ============================================================
+   Paleta de acento suave (íconos de servicios, kits, categorías
+   de fotos y pasos del proceso)
+   ============================================================ */
+.info-card .icon.tint-rose  { background: #E8CCC5; color: #8a5142; }
+.info-card .icon.tint-cream { background: #F6E7C6; color: #8a6d1f; }
+.info-card .icon.tint-blue  { background: #BDCED3; color: #3d5964; }
+.info-card .icon.tint-sage  { background: #CFD4AE; color: #56603a; }
+.info-card .icon.tint-stone { background: #BBB9B2; color: #55534c; }
+
+.info-card.tint-rose  { background: color-mix(in srgb, #E8CCC5 14%, var(--paper)); }
+.info-card.tint-cream { background: color-mix(in srgb, #F6E7C6 16%, var(--paper)); }
+.info-card.tint-blue  { background: color-mix(in srgb, #BDCED3 14%, var(--paper)); }
+.info-card.tint-sage  { background: color-mix(in srgb, #CFD4AE 16%, var(--paper)); }
+.info-card.tint-stone { background: color-mix(in srgb, #BBB9B2 16%, var(--paper)); }
+
+.info-card.tint-rose .price  { color: #8a5142; }
+.info-card.tint-cream .price { color: #8a6d1f; }
+.info-card.tint-blue .price  { color: #3d5964; }
+.info-card.tint-sage .price  { color: #56603a; }
+.info-card.tint-stone .price { color: #55534c; }
+
+.process-step-num.tint-rose  { background: #E8CCC5; color: #8a5142; }
+.process-step-num.tint-cream { background: #F6E7C6; color: #8a6d1f; }
+.process-step-num.tint-blue  { background: #BDCED3; color: #3d5964; }
+.process-step-num.tint-stone { background: #BBB9B2; color: #55534c; }
+.process-step-num.tint-sage  { background: #CFD4AE; color: #56603a; }
+.process-step-num.tint-taupe { background: #807E79; color: #ffffff; }
+.process-step-num.tint-mist  { background: #E3E3E3; color: #545454; }
+
+.category-badge {
+  display: inline-block;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+.admin-badge.tint-rose,  .category-badge.tint-rose  { background: #E8CCC5; color: #8a5142; }
+.admin-badge.tint-blue,  .category-badge.tint-blue  { background: #BDCED3; color: #3d5964; }
+.admin-badge.tint-sage,  .category-badge.tint-sage  { background: #CFD4AE; color: #56603a; }
+.admin-badge.tint-cream, .category-badge.tint-cream { background: #F6E7C6; color: #8a6d1f; }
