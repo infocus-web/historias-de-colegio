@@ -27,9 +27,6 @@ export default async function HomePage() {
             solo las fotos de su hijo o hija. Sin sobres, sin planillas, sin vueltas.
           </p>
           <div className="hero-cta">
-            <Link href="/#buscar-colegio" className="btn" style={{ textDecoration: "none" }}>
-              Buscar mi colegio
-            </Link>
             <Link href="/proceso" className="btn ghost" style={{ textDecoration: "none" }}>
               Cómo funciona
             </Link>
