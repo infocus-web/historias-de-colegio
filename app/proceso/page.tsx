@@ -39,6 +39,7 @@ texto:
 "Una vez confirmado el pago, coordinamos la entrega del kit impreso y/o el acceso a los archivos digitales en alta resolución, sin marca de agua.",
 },
 ];
+const PASO_TINTS = ["tint-rose", "tint-cream", "tint-blue", "tint-stone", "tint-sage", "tint-taupe", "tint-mist"];
 export default function ProcesoPage() {
 return (
 <main>
@@ -52,7 +53,7 @@ return (
 <div className="process-list">
 {PASOS.map((p, i) => (
 <div className="process-step" key={p.titulo}>
-<div className="process-step-num">{i + 1}</div>
+<div className={`process-step-num ${PASO_TINTS[i % PASO_TINTS.length]}`}>{i + 1}</div>
 <div>
 <h3>{p.titulo}</h3>
 <p>{p.texto}</p>
