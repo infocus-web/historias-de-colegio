@@ -115,6 +115,12 @@ grupal: "Grupal",
 docente: "Con docente",
 varias: "Varias",
 };
+const CAT_TINT: Record<Categoria, string> = {
+individual: "tint-rose",
+grupal: "tint-blue",
+docente: "tint-sage",
+varias: "tint-cream",
+};
 function comboKey(grado: string, division: string | null) {
 return `${grado}__${division ?? ""}`;
 }
@@ -436,7 +442,7 @@ return (
 <div className="admin-photo-row">
 <img className="admin-photo-thumb" src={urlFoto(foto.thumb_path ?? foto.storage_path)} alt={ETIQUETAS[foto.categoria]} />
 <div className="admin-photo-meta">
-<span className="admin-badge">{ETIQUETAS[foto.categoria]}</span>
+<span className={`admin-badge ${CAT_TINT[foto.categoria]}`}>{ETIQUETAS[foto.categoria]}</span>
 </div>
 <div className="admin-photo-assign">
 {foto.categoria === "varias" ? (
