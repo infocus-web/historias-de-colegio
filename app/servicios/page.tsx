@@ -17,7 +17,7 @@ un lugar simple para ver y comprar solo las fotos de su hijo o hija.
 <section className="section-wrap">
 <div className="card-grid cols-3">
 <div className="info-card">
-<div className="icon">📷</div>
+<div className="icon tint-rose">📷</div>
 <h3>Cobertura del evento</h3>
 <p>
 Fotografiamos el acto o la jornada completa: momentos grupales, entrega de
@@ -25,7 +25,7 @@ diplomas, actividades y detalles. Sin interrumpir la actividad del colegio.
 </p>
 </div>
 <div className="info-card">
-<div className="icon">🔒</div>
+<div className="icon tint-blue">🔒</div>
 <h3>Galería con acceso protegido</h3>
 <p>
 Cada evento tiene su propia galería online, con marca de agua para proteger
@@ -34,7 +34,7 @@ del colegio.
 </p>
 </div>
 <div className="info-card">
-<div className="icon">🛒</div>
+<div className="icon tint-sage">🛒</div>
 <h3>Compra directa desde el celular</h3>
 <p>
 Cada familia entra, encuentra las fotos de su hijo o hija, elige las que
@@ -46,22 +46,22 @@ quiere y paga online. Sin planillas, sin sobres, sin intermediarios.
 <section className="section-wrap" style={{ paddingTop: 0 }}>
 <h2 style={{ textAlign: "center", fontSize: 24, marginBottom: 28 }}>Kits disponibles</h2>
 <div className="card-grid">
-<div className="info-card">
+<div className="info-card tint-cream">
 <h3>Impreso + Digital</h3>
 <p>Fotos seleccionadas impresas en alta calidad, más el archivo digital de cada una.</p>
 <div className="price">$30.000</div>
 </div>
-<div className="info-card">
+<div className="info-card tint-blue">
 <h3>Solo Digital</h3>
 <p>El archivo digital en alta resolución, sin marca de agua, listo para descargar.</p>
 <div className="price">$15.000</div>
 </div>
-<div className="info-card">
+<div className="info-card tint-sage">
 <h3>Foto extra</h3>
 <p>Sumar una foto más allá de las incluidas en el kit elegido.</p>
 <div className="price">$5.000 c/u</div>
 </div>
-<div className="info-card">
+<div className="info-card tint-stone">
 <h3>Carpeta extra</h3>
 <p>Una carpeta adicional para otro familiar (abuelos, padrinos, etc.).</p>
 <div className="price">$10.000</div>
