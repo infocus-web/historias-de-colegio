@@ -24,6 +24,12 @@ individual: "Individual · 15x21cm",
 docente: "Con docente · 15x21cm",
 varias: "Varias",
 };
+const CAT_TINT: Record<Categoria, string> = {
+individual: "tint-rose",
+grupal: "tint-blue",
+docente: "tint-sage",
+varias: "tint-cream",
+};
 // Las 3 categorías obligatorias (una selección de cada una). "varias" no es obligatoria:
 // las fotos de esa categoría se ofrecen directamente como fotos extra opcionales.
 type CategoriaMandatoria = "individual" | "grupal" | "docente";
@@ -445,7 +451,7 @@ Elegí las 3 fotos{alumnoActual ? ` de ${alumnoActual.nombre}` : ""}
 <div className="card">
 {ORDEN.map((categoria) => (
 <div key={categoria} style={{ marginBottom: 22 }}>
-<h4 style={{ fontSize: 14.5, marginBottom: 10 }}>{ETIQUETAS[categoria]}</h4>
+<h4 style={{ fontSize: 14.5, marginBottom: 10 }}><span className={`category-badge ${CAT_TINT[categoria]}`}>{ETIQUETAS[categoria]}</span></h4>
 <div className="gallery">
 {fotosPorCategoria[categoria].length === 0 && (
 <p className="muted" style={{ fontSize: 13 }}>
