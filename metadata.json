@@ -1,0 +1,6 @@
+{
+  "name": "Foco Escolar - Fotografía Escolar",
+  "description": "Plataforma integral de fotografía escolar para colegios y familias. Sistema 100% digital sin sobres ni efectivo en la escuela, con selección de fotos, kits y descarga HD.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

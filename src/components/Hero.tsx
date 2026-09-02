@@ -1,0 +1,235 @@
+import { useState, type FormEvent } from 'react';
+import { Search, ShieldCheck, CheckCircle, ArrowRight, Sparkles, School, Eye, Lock } from 'lucide-react';
+import { COLEGIOS_EJEMPLO } from '../data/colegiosData';
+
+interface HeroProps {
+  onOpenFamilias: (colegioId?: string) => void;
+  onOpenInstituciones: () => void;
+}
+
+export default function Hero({ onOpenFamilias, onOpenInstituciones }: HeroProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showWatermark, setShowWatermark] = useState(true);
+
+  const filteredColegios = COLEGIOS_EJEMPLO.filter(
+    (c) =>
+      c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.localidad.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.codigoAcceso.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleSearchSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (filteredColegios.length > 0) {
+      onOpenFamilias(filteredColegios[0].id);
+    } else {
+      onOpenFamilias();
+    }
+  };
+
+  return (
+    <section className="relative overflow-hidden bg-gradient-to-b from-amber-50/50 via-white to-slate-50 pt-10 pb-16 lg:pt-16 lg:pb-24 border-b border-slate-200/60">
+      {/* Decorative subtle background elements */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-96 pointer-events-none opacity-40">
+        <div className="absolute -top-12 left-10 w-72 h-72 rounded-full bg-amber-200/40 blur-3xl" />
+        <div className="absolute top-20 right-10 w-80 h-80 rounded-full bg-sky-200/40 blur-3xl" />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+          {/* Left Column: Copy & Search */}
+          <div className="lg:col-span-7 space-y-6 text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100/80 border border-amber-200/80 text-amber-900 text-xs font-semibold tracking-wide">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+              <span>El nuevo estándar en fotografía escolar argentina</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12] font-['Outfit']">
+              Las fotos del colegio,{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700">
+                directo al celular
+              </span>{' '}
+              de cada familia
+            </h1>
+
+            <p className="text-lg sm:text-xl text-slate-600 leading-relaxed max-w-2xl font-normal">
+              Retratos escolares con luz natural y calidez humana. Cada familia elige online
+              la foto que más le gusta y paga de forma digital.
+              <strong className="text-slate-900 font-semibold block mt-1">
+                El colegio no toca dinero, no junta sobres ni reparte planillas.
+              </strong>
+            </p>
+
+            {/* School Search Box */}
+            <div className="bg-white p-2.5 sm:p-3 rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/90 max-w-2xl">
+              <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-2">
+                <div className="relative flex-1 flex items-center">
+                  <Search className="absolute left-3.5 w-5 h-5 text-slate-400" />
+                  <input
+                    id="input-buscar-colegio-hero"
+                    type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Buscá tu colegio o ingresá tu código (ej: TOURS26)..."
+                    className="w-full pl-11 pr-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 bg-transparent border-0 focus:outline-hidden focus:ring-0"
+                  />
+                  {searchTerm && (
+                    <button
+                      type="button"
+                      onClick={() => setSearchTerm('')}
+                      className="text-xs text-slate-400 hover:text-slate-600 px-2 py-1"
+                    >
+                      Borrar
+                    </button>
+                  )}
+                </div>
+                <button
+                  id="btn-buscar-colegio-hero"
+                  type="submit"
+                  className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm rounded-xl transition-all shadow-sm shadow-amber-400/40 flex items-center justify-center gap-2 cursor-pointer active:scale-98 shrink-0"
+                >
+                  <span>Ver mis fotos</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+
+              {/* Quick suggestion pills */}
+              <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
+                <span className="font-medium text-slate-400 flex items-center gap-1">
+                  <School className="w-3.5 h-3.5" />
+                  Colegios de muestra:
+                </span>
+                {COLEGIOS_EJEMPLO.slice(0, 3).map((col) => (
+                  <button
+                    key={col.id}
+                    onClick={() => onOpenFamilias(col.id)}
+                    className="px-2.5 py-1 rounded-md bg-slate-100 hover:bg-amber-100 hover:text-amber-900 text-slate-700 transition-colors font-medium cursor-pointer"
+                  >
+                    {col.nombre.replace('Colegio ', '').replace('Instituto ', '')}
+                  </button>
+                ))}
+                <button
+                  onClick={() => onOpenFamilias('col-5')}
+                  className="px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 hover:bg-amber-200 transition-colors font-semibold cursor-pointer"
+                >
+                  Demo abierta (Probar)
+                </button>
+              </div>
+            </div>
+
+            {/* Micro value props */}
+            <div className="pt-2 flex flex-wrap items-center gap-y-2 gap-x-6 text-xs text-slate-600">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Múltiples tomas por alumno</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Mercado Pago y Transferencia</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>Papel fotográfico satinado de máxima durabilidad</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Visual Product & Watermark Interactive Showcase */}
+          <div className="lg:col-span-5">
+            <div className="relative mx-auto max-w-md bg-white rounded-3xl p-4 sm:p-5 shadow-2xl shadow-slate-200/80 border border-slate-200/80">
+              {/* Photo Card with Watermark Simulator */}
+              <div className="relative aspect-4/5 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-inner group">
+                <img
+                  src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1000&q=85"
+                  alt="Muestra de fotografía escolar con guardapolvo"
+                  className="w-full h-full object-cover object-center transform group-hover:scale-102 transition-transform duration-500"
+                />
+
+                {/* Simulated Watermark Overlay */}
+                {showWatermark && (
+                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
+                    <div className="w-[180%] h-[180%] flex flex-col justify-around rotate-[-25deg] select-none opacity-40">
+                      {[...Array(9)].map((_, i) => (
+                        <div
+                          key={i}
+                          className="flex justify-around text-white font-black tracking-widest text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap"
+                        >
+                          <span>FOCO ESCOLAR · MUESTRA</span>
+                          <span>FOCO ESCOLAR · MUESTRA</span>
+                          <span>FOCO ESCOLAR · MUESTRA</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Top Badge */}
+                <div className="absolute top-3 left-3 right-3 flex items-center justify-between">
+                  <span className="px-2.5 py-1 rounded-full bg-slate-900/80 backdrop-blur-xs text-white text-[11px] font-semibold flex items-center gap-1.5 shadow-xs">
+                    <School className="w-3 h-3 text-amber-400" />
+                    <span>Colegio San Martín · 3° A</span>
+                  </span>
+                  <span className="px-2 py-1 rounded-md bg-amber-400 text-slate-950 text-[10px] font-bold tracking-wider uppercase">
+                    Ciclo 2026
+                  </span>
+                </div>
+
+                {/* Interactive Watermark Toggle Pill */}
+                <div className="absolute bottom-3 left-3 right-3">
+                  <div className="bg-white/95 backdrop-blur-md rounded-xl p-2.5 shadow-lg border border-slate-200/80 flex items-center justify-between">
+                    <div className="text-left">
+                      <p className="text-[11px] font-bold text-slate-900 flex items-center gap-1">
+                        {showWatermark ? (
+                          <>
+                            <Lock className="w-3 h-3 text-amber-600" />
+                            <span>Galería de Muestra</span>
+                          </>
+                        ) : (
+                          <>
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                            <span>Resultado Final HD</span>
+                          </>
+                        )}
+                      </p>
+                      <p className="text-[10px] text-slate-500">
+                        {showWatermark
+                          ? 'Con marca de seguridad escolar'
+                          : 'Limpia, nítida y en alta definición'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowWatermark(!showWatermark)}
+                      className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-slate-600" />
+                      <span>{showWatermark ? 'Ver sin marca' : 'Ver con marca'}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom Card Summary */}
+              <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-slate-500">Kits disponibles desde</p>
+                  <p className="text-xl font-extrabold text-slate-900 font-['Outfit']">
+                    $9.500 <span className="text-xs font-normal text-slate-500">ARS</span>
+                  </p>
+                </div>
+                <button
+                  id="btn-ver-galeria-card"
+                  onClick={() => onOpenFamilias('col-1')}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-1.5"
+                >
+                  <span>Probar Galería Demo</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-amber-400" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
