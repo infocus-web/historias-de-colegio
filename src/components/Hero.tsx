@@ -154,9 +154,9 @@ export default function Hero({ onOpenFamilias, onOpenInstituciones }: HeroProps)
                           key={i}
                           className="flex justify-around text-white font-black tracking-widest text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap"
                         >
-                          <span>FOCO ESCOLAR · MUESTRA</span>
-                          <span>FOCO ESCOLAR · MUESTRA</span>
-                          <span>FOCO ESCOLAR · MUESTRA</span>
+                          <span>INFOCUS SCHOOLS · MUESTRA</span>
+                          <span>INFOCUS SCHOOLS · MUESTRA</span>
+                          <span>INFOCUS SCHOOLS · MUESTRA</span>
                         </div>
                       ))}
                     </div>

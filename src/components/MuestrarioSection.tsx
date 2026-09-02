@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Check, Image as ImageIcon, Frame, Bookmark, CreditCard, ChevronRight } from 'lucide-react';
+import { Sparkles, Check, Image as ImageIcon, Frame, Bookmark, CreditCard, ChevronRight, Box } from 'lucide-react';
 import { KITS_DISPONIBLES } from '../data/colegiosData';
 
 interface MuestrarioSectionProps {
@@ -7,11 +7,12 @@ interface MuestrarioSectionProps {
 }
 
 export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProps) {
-  const [activeTab, setActiveTab] = useState<'individual' | 'grupal' | 'docente' | 'impresos'>('individual');
+  const [activeTab, setActiveTab] = useState<'individual' | 'grupal' | 'fotocubo' | 'docente' | 'impresos'>('individual');
 
   const tabs = [
     { id: 'individual', label: 'Retratos Individuales', icon: ImageIcon },
     { id: 'grupal', label: 'Foto Grupal de Grado', icon: ImageIcon },
+    { id: 'fotocubo', label: 'Fotocubo & Egresados', icon: Box },
     { id: 'docente', label: 'Con la Seño / Docente', icon: Bookmark },
     { id: 'impresos', label: 'Kits Físicos & Stickers', icon: Frame },
   ];
@@ -39,6 +40,18 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
         'Diseño gráfico conmemorativo con tipografía y logo del colegio',
         'Cada maestro y directivo recibe su copia de obsequio',
         'Archivo de alta resolución para archivar o reimprimir',
+      ],
+    },
+    fotocubo: {
+      titulo: 'Fotocubo de madera: el souvenir estrella de egresaditos',
+      descripcion:
+        'Cubo giratorio con 6 caras impresas en papel fotográfico premium. El souvenir más pedido para sala de 5 (jardín), 7° grado y 5°/6° año de secundaria.',
+      imagen: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=1200&q=85',
+      specs: [
+        'Cubo de madera maciza o acrílico pulido 10x10 cm',
+        'Foto grupal con diseño de promo, retrato individual y nombres de compañeros',
+        'Escudo institucional y año de promoción conmemorativo',
+        'Listo para regalar en caja protectora conmemorativa',
       ],
     },
     docente: {

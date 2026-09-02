@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
 import {
   X,
   Search,
@@ -19,6 +19,10 @@ import {
   ShieldCheck,
   Heart,
   QrCode,
+  Package,
+  Clock,
+  Truck,
+  FileText,
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA, KITS_DISPONIBLES } from '../data/colegiosData';
 import { Colegio, KitProducto, Foto } from '../types';
@@ -44,6 +48,12 @@ export default function PortalFamiliasModal({
   // 5: Pedido Confirmado
   const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(1);
 
+  // Mode: 'pedido' (order flow) | 'seguimiento' (order tracking tool)
+  const [modalMode, setModalMode] = useState<'pedido' | 'seguimiento'>('pedido');
+  const [trackingQuery, setTrackingQuery] = useState('');
+  const [searchedOrder, setSearchedOrder] = useState<any | null>(null);
+  const [trackingError, setTrackingError] = useState('');
+
   // Step 1: School & Student Selection
   const [searchColegio, setSearchColegio] = useState('');
   const [selectedColegio, setSelectedColegio] = useState<Colegio | null>(null);
@@ -67,6 +77,7 @@ export default function PortalFamiliasModal({
   );
   const [extraStickers, setExtraStickers] = useState(false);
   const [extraPortarretrato, setExtraPortarretrato] = useState(false);
+  const [extraLlavero, setExtraLlavero] = useState(false);
 
   // Step 4: Checkout
   const [tutorNombre, setTutorNombre] = useState('Mariana Gómez (Mamá)');
@@ -107,7 +118,8 @@ export default function PortalFamiliasModal({
   const precioBase = selectedKit.precio;
   const precioStickers = extraStickers ? 2500 : 0;
   const precioPortarretrato = extraPortarretrato ? 4200 : 0;
-  const total = precioBase + precioStickers + precioPortarretrato;
+  const precioLlavero = extraLlavero ? 2200 : 0;
+  const total = precioBase + precioStickers + precioPortarretrato + precioLlavero;
 
   // Handlers
   const handleIngresarCodigo = () => {
@@ -135,11 +147,101 @@ export default function PortalFamiliasModal({
   const handleCompletarPago = () => {
     setIsProcessingPayment(true);
     setTimeout(() => {
-      const code = `FE-2026-${Math.floor(1000 + Math.random() * 9000)}`;
+      const code = `IFS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
       setNumeroPedido(code);
       setIsProcessingPayment(false);
       setStep(5);
     }, 1200);
+  };
+
+  // Tracking query handler
+  const handleConsultarSeguimiento = (e?: FormEvent) => {
+    if (e) e.preventDefault();
+    setTrackingError('');
+    const query = trackingQuery.trim().toUpperCase();
+    if (!query) {
+      setTrackingError('Por favor ingresá tu número de pedido o teléfono');
+      return;
+    }
+
+    // Demo database of orders
+    const mockOrders = [
+      {
+        id: 'IFS-2026-8812',
+        colegio: 'Colegio San Martín de Tours',
+        alumno: 'Valentina Rossi (3° A)',
+        tutor: 'Mariana Gómez',
+        telefono: '1154893210',
+        kit: 'Kit Clásico Impreso + Digital',
+        total: 16800,
+        fecha: '02/09/2026',
+        estado: 'en_laboratorio',
+        estadoTexto: 'En Laboratorio Fotográfico',
+        descripcionEstado: 'Tus fotos se encuentran en proceso de revelado químico profesional en papel satinado 260g y corte computarizado.',
+        pasoActual: 3,
+        entregaEstimada: 'Entrega en el colegio: Jueves 10 de Septiembre',
+        descargaLista: true,
+      },
+      {
+        id: 'IFS-2026-8809',
+        colegio: 'Instituto Belgrano Day School',
+        alumno: 'Mateo Benítez (1° B)',
+        tutor: 'Diego Benítez',
+        telefono: '1144559988',
+        kit: 'Kit Digital HD',
+        total: 9500,
+        fecha: '02/09/2026',
+        estado: 'listo_descarga',
+        estadoTexto: 'Descarga Digital HD Disponible',
+        descripcionEstado: 'Tu pago fue acreditado y los archivos digitales en alta definición ya están disponibles para descargar.',
+        pasoActual: 4,
+        entregaEstimada: 'Archivos listos para guardar en tu dispositivo',
+        descargaLista: true,
+      },
+      {
+        id: 'IFS-2026-8795',
+        colegio: 'Colegio Santa María de San Isidro',
+        alumno: 'Sofía Álvarez (5° Verde)',
+        tutor: 'Luciana Álvarez',
+        telefono: '1167221100',
+        kit: 'Kit Colección Premium',
+        total: 24900,
+        fecha: '01/09/2026',
+        estado: 'en_camino',
+        estadoTexto: 'Empacado & Rotulado',
+        descripcionEstado: 'El sobre conmemorativo y cuadro están empaquetados en sobre individual rotulado para ser entregados en la institución escolar.',
+        pasoActual: 4,
+        entregaEstimada: 'Fecha de entrega pautada con el colegio: Viernes 5 de Septiembre',
+        descargaLista: true,
+      }
+    ];
+
+    const cleanNumber = query.replace(/\D/g, '');
+    const found = mockOrders.find(
+      (o) => o.id.includes(query) || (cleanNumber.length >= 6 && o.telefono.includes(cleanNumber))
+    );
+
+    if (found) {
+      setSearchedOrder(found);
+    } else {
+      // Create dynamically matching order for user's query if it resembles a code
+      setSearchedOrder({
+        id: query.startsWith('IFS-') ? query : `IFS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
+        colegio: selectedColegio ? selectedColegio.nombre : 'Colegio San Martín de Tours',
+        alumno: nombreAlumno || 'Alumno Escolar',
+        tutor: tutorNombre || 'Tutor Familiar',
+        telefono: tutorWhatsapp || '11 5489-3210',
+        kit: selectedKit.nombre,
+        total: total,
+        fecha: new Date().toLocaleDateString('es-AR'),
+        estado: 'en_laboratorio',
+        estadoTexto: 'En Proceso de Laboratorio',
+        descripcionEstado: 'Tu pedido ha sido recibido y se encuentra en etapa de copiado y control de calidad.',
+        pasoActual: 3,
+        entregaEstimada: 'Fecha estimada de entrega en el colegio: dentro de los 7 a 10 días hábiles.',
+        descargaLista: true,
+      });
+    }
   };
 
   return (
@@ -154,7 +256,7 @@ export default function PortalFamiliasModal({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-base font-bold font-['Outfit'] tracking-wide">
-                  Mi Foco Escolar
+                  Mi InFocus Schools
                 </span>
                 <span className="text-[10px] bg-slate-800 text-amber-400 font-bold px-2 py-0.5 rounded border border-slate-700">
                   Portal de Familias
@@ -166,17 +268,50 @@ export default function PortalFamiliasModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            {/* Step indicator breadcrumb */}
-            <div className="hidden sm:flex items-center gap-2 text-xs font-semibold text-slate-400">
-              <span className={step >= 1 ? 'text-amber-400 font-bold' : ''}>1. Alumno</span>
-              <span>›</span>
-              <span className={step >= 2 ? 'text-amber-400 font-bold' : ''}>2. Galería</span>
-              <span>›</span>
-              <span className={step >= 3 ? 'text-amber-400 font-bold' : ''}>3. Kit</span>
-              <span>›</span>
-              <span className={step >= 4 ? 'text-amber-400 font-bold' : ''}>4. Pago</span>
+          <div className="flex items-center gap-3 sm:gap-4">
+            {/* Tab switch between order and tracking */}
+            <div className="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs">
+              <button
+                type="button"
+                onClick={() => setModalMode('pedido')}
+                className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                  modalMode === 'pedido'
+                    ? 'bg-amber-400 text-slate-950 shadow-xs'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Ver Fotos / Comprar
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setModalMode('seguimiento');
+                  if (!searchedOrder) {
+                    setTrackingQuery('IFS-2026-8812');
+                  }
+                }}
+                className={`px-3 py-1.5 rounded-lg font-semibold transition-all cursor-pointer ${
+                  modalMode === 'seguimiento'
+                    ? 'bg-amber-400 text-slate-950 shadow-xs'
+                    : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Consultar Mi Pedido
+              </button>
             </div>
+
+            {/* Step indicator breadcrumb (only in pedido mode) */}
+            {modalMode === 'pedido' && (
+              <div className="hidden lg:flex items-center gap-2 text-xs font-semibold text-slate-400">
+                <span className={step >= 1 ? 'text-amber-400 font-bold' : ''}>1. Alumno</span>
+                <span>›</span>
+                <span className={step >= 2 ? 'text-amber-400 font-bold' : ''}>2. Galería</span>
+                <span>›</span>
+                <span className={step >= 3 ? 'text-amber-400 font-bold' : ''}>3. Kit</span>
+                <span>›</span>
+                <span className={step >= 4 ? 'text-amber-400 font-bold' : ''}>4. Pago</span>
+              </div>
+            )}
 
             <button
               onClick={onClose}
@@ -190,8 +325,186 @@ export default function PortalFamiliasModal({
 
         {/* Modal Scrollable Body */}
         <div className="overflow-y-auto p-5 sm:p-8 flex-1 bg-slate-50/50">
-          {/* STEP 1: School & Student Selection */}
-          {step === 1 && (
+          {/* TRACKING TOOL VIEW */}
+          {modalMode === 'seguimiento' && (
+            <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in duration-200">
+              <div className="text-center space-y-2">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center mx-auto mb-2">
+                  <Package className="w-6 h-6" />
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-['Outfit']">
+                  Consultar Estado de Mi Pedido
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-600 max-w-lg mx-auto">
+                  Ingresá el número de pedido provisto al momento del pago (ej: <strong className="font-mono">IFS-2026-8812</strong>) o tu número de WhatsApp para conocer el estado en tiempo real.
+                </p>
+              </div>
+
+              {/* Search Box */}
+              <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm max-w-xl mx-auto">
+                <form onSubmit={handleConsultarSeguimiento} className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      value={trackingQuery}
+                      onChange={(e) => setTrackingQuery(e.target.value)}
+                      placeholder="Ej: IFS-2026-8812 o 1154893210..."
+                      className="w-full pl-10 pr-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 bg-slate-50 rounded-xl border border-slate-200 focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl transition-all cursor-pointer shrink-0 shadow-xs"
+                  >
+                    Consultar
+                  </button>
+                </form>
+
+                {trackingError && (
+                  <p className="text-[11px] text-red-600 mt-2 text-left px-2">{trackingError}</p>
+                )}
+
+                {/* Quick Examples */}
+                <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
+                  <span className="font-medium text-slate-400">Probar ejemplos:</span>
+                  {['IFS-2026-8812', 'IFS-2026-8809', 'IFS-2026-8795'].map((code) => (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => {
+                        setTrackingQuery(code);
+                        setTimeout(() => handleConsultarSeguimiento(), 50);
+                      }}
+                      className="px-2 py-0.5 rounded bg-slate-100 hover:bg-amber-100 text-slate-700 font-mono text-[10px] transition-colors cursor-pointer"
+                    >
+                      {code}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Order Result Card */}
+              {searchedOrder && (
+                <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-md text-left space-y-6 animate-in zoom-in-95 duration-150">
+                  {/* Card Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-900 text-amber-400">
+                          {searchedOrder.id}
+                        </span>
+                        <span className="text-xs text-slate-400">Fecha: {searchedOrder.fecha}</span>
+                      </div>
+                      <h4 className="text-lg font-bold text-slate-900 mt-1 font-['Outfit']">
+                        {searchedOrder.alumno}
+                      </h4>
+                      <p className="text-xs text-slate-600">{searchedOrder.colegio}</p>
+                    </div>
+
+                    <div className="text-left sm:text-right">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
+                        Kit Seleccionado
+                      </span>
+                      <span className="text-xs font-bold text-slate-900">{searchedOrder.kit}</span>
+                      <span className="text-xs font-black text-amber-600 block mt-0.5">
+                        ${searchedOrder.total.toLocaleString('es-AR')} ARS
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* 4-Step Progress Tracker */}
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                      Progreso de Producción
+                    </p>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <div className={`p-3 rounded-xl border text-left ${searchedOrder.pasoActual >= 1 ? 'bg-emerald-50/60 border-emerald-300' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                        <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs mb-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>1. Pedido</span>
+                        </div>
+                        <p className="text-[10px] text-slate-600">Registrado online</p>
+                      </div>
+
+                      <div className={`p-3 rounded-xl border text-left ${searchedOrder.pasoActual >= 2 ? 'bg-emerald-50/60 border-emerald-300' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                        <div className="flex items-center gap-1.5 text-emerald-700 font-bold text-xs mb-1">
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>2. Pago</span>
+                        </div>
+                        <p className="text-[10px] text-slate-600">Acreditado</p>
+                      </div>
+
+                      <div className={`p-3 rounded-xl border text-left ${searchedOrder.pasoActual >= 3 ? 'bg-amber-50/80 border-amber-400' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                        <div className="flex items-center gap-1.5 text-amber-800 font-bold text-xs mb-1">
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          <span>3. Laboratorio</span>
+                        </div>
+                        <p className="text-[10px] text-slate-600">Revelado químico 260g</p>
+                      </div>
+
+                      <div className={`p-3 rounded-xl border text-left ${searchedOrder.pasoActual >= 4 ? 'bg-emerald-50/60 border-emerald-300' : 'bg-slate-50 border-slate-200 opacity-60'}`}>
+                        <div className="flex items-center gap-1.5 text-slate-800 font-bold text-xs mb-1">
+                          <Truck className="w-3.5 h-3.5 text-slate-600" />
+                          <span>4. Entrega</span>
+                        </div>
+                        <p className="text-[10px] text-slate-600">Sobre cerrado en escuela</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Status Detail Banner */}
+                  <div className="p-4 bg-amber-50/60 rounded-xl border border-amber-200 text-xs space-y-1">
+                    <p className="font-bold text-amber-950 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                      <span>{searchedOrder.estadoTexto}</span>
+                    </p>
+                    <p className="text-slate-700">{searchedOrder.descripcionEstado}</p>
+                    <p className="text-[11px] font-semibold text-amber-800 pt-1">
+                      {searchedOrder.entregaEstimada}
+                    </p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="pt-2 flex flex-col sm:flex-row gap-3 items-center justify-between border-t border-slate-100">
+                    {searchedOrder.descargaLista && (
+                      <a
+                        href={FOTOS_MUESTRA[0].url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full sm:w-auto px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-2"
+                      >
+                        <Download className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Descargar Archivos Digitales HD</span>
+                      </a>
+                    )}
+
+                    <div className="flex gap-2 w-full sm:w-auto">
+                      <a
+                        href={`https://wa.me/5491100000000?text=Hola%20InFocus%20Schools,%20consulto%20por%20mi%20pedido%20${searchedOrder.id}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 sm:flex-initial px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
+                      >
+                        <PhoneCall className="w-3.5 h-3.5" />
+                        <span>Consultar por WhatsApp</span>
+                      </a>
+                      <button
+                        type="button"
+                        onClick={() => setModalMode('pedido')}
+                        className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-xl transition-colors cursor-pointer"
+                      >
+                        Ir a Comprar Fotos
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* STEP 1: School & Student Selection (ORDER FLOW) */}
+          {modalMode === 'pedido' && step === 1 && (
             <div className="max-w-3xl mx-auto space-y-8 animate-in fade-in duration-200">
               <div className="text-center space-y-2">
                 <h3 className="text-2xl sm:text-3xl font-extrabold text-slate-900 font-['Outfit']">
@@ -473,8 +786,8 @@ export default function PortalFamiliasModal({
                                   key={idx}
                                   className="flex justify-around text-white font-black tracking-widest text-xs drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap"
                                 >
-                                  <span>FOCO ESCOLAR · MUESTRA</span>
-                                  <span>FOCO ESCOLAR · MUESTRA</span>
+                                  <span>INFOCUS SCHOOLS · MUESTRA</span>
+                                  <span>INFOCUS SCHOOLS · MUESTRA</span>
                                 </div>
                               ))}
                             </div>
@@ -647,7 +960,7 @@ export default function PortalFamiliasModal({
                   Adicionales opcionales para complementar tu pedido:
                 </h4>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div
                     onClick={() => setExtraStickers(!extraStickers)}
                     className={`p-3.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
@@ -658,14 +971,14 @@ export default function PortalFamiliasModal({
                   >
                     <div>
                       <p className="text-xs font-bold text-slate-900">
-                        Plancha de 8 stickers escolares personalizados
+                        8 Stickers personalizados
                       </p>
                       <p className="text-[11px] text-slate-500">
-                        Ideales para cuadernos, cartuchera y carpetas (+ $2.500 ARS)
+                        Para cuadernos y cartucheras (+ $2.500)
                       </p>
                     </div>
                     <div
-                      className={`w-5 h-5 rounded-md border flex items-center justify-center ${
+                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ml-2 ${
                         extraStickers
                           ? 'bg-amber-400 border-amber-500 text-slate-950'
                           : 'border-slate-300 bg-white'
@@ -685,20 +998,47 @@ export default function PortalFamiliasModal({
                   >
                     <div>
                       <p className="text-xs font-bold text-slate-900">
-                        Portarretrato de madera de álamo natural
+                        Portarretrato de álamo
                       </p>
                       <p className="text-[11px] text-slate-500">
-                        Para foto 15x21 cm listo para lucir en el hogar (+ $4.200 ARS)
+                        Madera natural 15x21 cm (+ $4.200)
                       </p>
                     </div>
                     <div
-                      className={`w-5 h-5 rounded-md border flex items-center justify-center ${
+                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ml-2 ${
                         extraPortarretrato
                           ? 'bg-amber-400 border-amber-500 text-slate-950'
                           : 'border-slate-300 bg-white'
                       }`}
                     >
                       {extraPortarretrato && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                    </div>
+                  </div>
+
+                  <div
+                    onClick={() => setExtraLlavero(!extraLlavero)}
+                    className={`p-3.5 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
+                      extraLlavero
+                        ? 'bg-amber-50/80 border-amber-400'
+                        : 'bg-slate-50 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">
+                        Llavero escolar bifaz
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Acrílico con foto individual y grupal (+ $2.200)
+                      </p>
+                    </div>
+                    <div
+                      className={`w-5 h-5 rounded-md border flex items-center justify-center shrink-0 ml-2 ${
+                        extraLlavero
+                          ? 'bg-amber-400 border-amber-500 text-slate-950'
+                          : 'border-slate-300 bg-white'
+                      }`}
+                    >
+                      {extraLlavero && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                     </div>
                   </div>
                 </div>
@@ -846,13 +1186,13 @@ export default function PortalFamiliasModal({
                     <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs space-y-1">
                       <p className="font-bold text-amber-900">Datos bancarios para transferir:</p>
                       <p className="text-slate-700">
-                        <strong>Alias:</strong> <span className="font-mono">FOCO.ESCOLAR.FOTOS</span>
+                        <strong>Alias:</strong> <span className="font-mono">INFOCUS.SCHOOLS</span>
                       </p>
                       <p className="text-slate-700">
                         <strong>CBU:</strong> <span className="font-mono">0070012345678901234567</span>
                       </p>
                       <p className="text-slate-700">
-                        <strong>Titular:</strong> Foco Escolar SRL · CUIT 30-71829341-8
+                        <strong>Titular:</strong> InFocus Fotografía y Video · CUIT 30-71829341-8
                       </p>
                     </div>
                   )}
@@ -886,6 +1226,12 @@ export default function PortalFamiliasModal({
                         <div className="flex justify-between">
                           <span>Portarretrato madera</span>
                           <span>$4.200</span>
+                        </div>
+                      )}
+                      {extraLlavero && (
+                        <div className="flex justify-between">
+                          <span>Llavero escolar bifaz</span>
+                          <span>$2.200</span>
                         </div>
                       )}
                       <div className="flex justify-between text-emerald-400 font-medium">
@@ -1013,7 +1359,7 @@ export default function PortalFamiliasModal({
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                 <a
-                  href={`https://wa.me/5491100000000?text=Hola%20Foco%20Escolar,%20hice%20el%20pedido%20${numeroPedido}%20para%20${encodeURIComponent(
+                  href={`https://wa.me/5491100000000?text=Hola%20InFocus%20Schools,%20hice%20el%20pedido%20${numeroPedido}%20para%20${encodeURIComponent(
                     nombreAlumno
                   )}`}
                   target="_blank"
@@ -1061,8 +1407,8 @@ export default function PortalFamiliasModal({
                         key={i}
                         className="flex justify-around text-white font-black tracking-widest text-xs drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap"
                       >
-                        <span>FOCO ESCOLAR · MUESTRA</span>
-                        <span>FOCO ESCOLAR · MUESTRA</span>
+                        <span>INFOCUS SCHOOLS · MUESTRA</span>
+                        <span>INFOCUS SCHOOLS · MUESTRA</span>
                       </div>
                     ))}
                   </div>

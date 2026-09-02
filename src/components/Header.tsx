@@ -43,7 +43,7 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
               </>
             )}
             <a
-              href="https://wa.me/5491100000000?text=Hola%20Foco%20Escolar,%20quisiera%20hacer%20una%20consulta"
+              href="https://wa.me/5491100000000?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors"
@@ -70,14 +70,14 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="text-xl font-bold tracking-tight text-slate-900 font-['Outfit']">
-                  FOCO<span className="text-amber-600">ESCOLAR</span>
+                  INFOCUS<span className="text-amber-600">SCHOOLS</span>
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
                   Arg
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 -mt-0.5 font-medium tracking-wide">
-                Fotografía escolar 100% digital
+                Fotografía escolar 100% digital · by InFocus
               </p>
             </div>
           </div>
