@@ -31,15 +31,15 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
       ],
     },
     grupal: {
-      titulo: 'Foto grupal con diseño institucional',
+      titulo: 'Foto grupal en formato ampliado 20x30 cm',
       descripcion:
         'El recuerdo imborrable de todo el grupo de compañeros. Ordenados por estatura, con nombre del colegio, grado, división y año lectivo.',
       imagen: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1200&q=85',
       specs: [
-        'Formato apaisado 15x21 cm de alta visibilidad',
-        'Diseño gráfico conmemorativo con tipografía y logo del colegio',
-        'Cada maestro y directivo recibe su copia de obsequio',
-        'Archivo de alta resolución para archivar o reimprimir',
+        'Formato ampliado 20x30 cm de máxima visibilidad y detalle',
+        'Diseño gráfico institucional con escudo y tipografía escolar',
+        'Cada maestro y directivo recibe su copia física de obsequio',
+        'Archivo en alta resolución (HD) incluido de regalo para las familias',
       ],
     },
     fotocubo: {
@@ -60,22 +60,22 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
         'Un momento de ternura y complicidad con las maestras de grado o profesores que acompañan a los chicos durante todo el año.',
       imagen: 'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=85',
       specs: [
-        'Formato 13x18 cm conmemorativo',
-        'Tomas en el aula, pizarrón o biblioteca',
-        'Incluida en todos los kits clásicos y premium',
+        'Formato 15x21 cm conmemorativo con la seño / docente',
+        'Tomas en el aula, pizarrón o biblioteca escolar',
+        'Incluida tanto en el Kit Impreso como en el Solo Digital HD',
         'Disponible también para hermanos o primos del mismo colegio',
       ],
     },
     impresos: {
-      titulo: 'Presentación premium y materiales duraderos',
+      titulo: 'Carpeta de presentación y copias fotográficas de laboratorio',
       descripcion:
-        'Cuidamos cada detalle: portarretratos institucionales rígidos, planchas de stickers troqueladas y fotos carnet oficiales para libretas.',
+        'Cuidamos cada detalle: papel fotográfico satinado de 260g, carpetas institucionales exclusivas y entrega prolija individual.',
       imagen: 'https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?auto=format&fit=crop&w=1200&q=85',
       specs: [
-        'Portarretrato plegable institucional con logo',
-        'Plancha con 4 u 8 stickers adhesivos plastificados con su nombre',
-        '4 fotos carnet 4x4 cm para trámites escolares',
-        'Sobre cerrado individual con nombre y curso para entrega en mano',
+        '1 carpeta de presentación con diseño conmemorativo exclusivo',
+        '1 foto grupal 20x30 cm + 2 fotos 15x21 cm (individual y con docente)',
+        'Descarga digital HD sin marcas de agua de regalo',
+        'Sobre cerrado individual por grado y división para entrega en mano',
       ],
     },
   };
@@ -173,15 +173,15 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
 
         {/* Kits Comparison Grid */}
         <div id="familias" className="mt-20">
-          <div className="text-center max-w-2xl mx-auto mb-12">
+          <div className="text-center max-w-3xl mx-auto mb-12">
             <span className="text-xs font-bold text-emerald-700 uppercase tracking-widest px-3 py-1 bg-emerald-50 rounded-full border border-emerald-200 inline-block mb-3">
-              Para Familias · Elección Voluntaria
+              Modelo Comercial · Elección Voluntaria
             </span>
             <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight font-['Outfit']">
-              Kits escolares con precios claros en pesos argentinos
+              Precios claros y 100% opcional, evento por evento
             </h3>
             <p className="text-sm text-slate-600 mt-2">
-              Sin sorpresas ni letra chica. Cada familia elige libremente el paquete que mejor se adapte a sus ganas.
+              Cada familia elige libremente qué producto prefiere — no hay un plan asignado por grado. Quien no compra no paga nada ni queda comprometido.
             </p>
           </div>
 
@@ -191,13 +191,13 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
                 key={kit.id}
                 className={`relative bg-white rounded-3xl p-6 sm:p-8 flex flex-col justify-between transition-all duration-300 ${
                   kit.popular
-                    ? 'border-2 border-amber-400 shadow-xl shadow-amber-400/10 scale-102 sm:-translate-y-1'
+                    ? 'border-2 border-amber-400 shadow-xl shadow-amber-400/10 scale-102 sm:-translate-y-1 ring-4 ring-amber-400/10'
                     : 'border border-slate-200 shadow-md hover:border-slate-300'
                 }`}
               >
                 {kit.popular && (
                   <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-400 text-slate-950 text-[11px] font-extrabold px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                    El más elegido por las familias
+                    Opción más elegida por las familias
                   </div>
                 )}
 
@@ -217,19 +217,25 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
                     )}
                   </div>
 
-                  <p className="text-xs text-slate-500 mb-5 min-h-[32px]">{kit.tagline}</p>
+                  {kit.subtitulo && (
+                    <p className="text-xs font-semibold text-slate-700 mb-1">{kit.subtitulo}</p>
+                  )}
+                  <p className="text-xs text-slate-500 mb-5 min-h-[30px]">{kit.tagline}</p>
 
                   <div className="mb-6 pb-6 border-b border-slate-100">
                     <div className="flex items-baseline gap-2">
                       <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-['Outfit']">
                         ${kit.precio.toLocaleString('es-AR')}
                       </span>
-                      <span className="text-xs font-semibold text-slate-500">ARS</span>
+                      <span className="text-xs font-semibold text-slate-500">
+                        {kit.id === 'kit-evento-suelto' ? 'ARS / foto' : 'ARS / alumno'}
+                      </span>
                     </div>
-                    {kit.precioOriginal && (
-                      <p className="text-xs text-slate-400 line-through mt-0.5">
-                        Precio habitual: ${kit.precioOriginal.toLocaleString('es-AR')}
-                      </p>
+                    {kit.cooperadoraAporte && (
+                      <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/70 text-[11px] font-bold">
+                        <span>🎓 Aporte a Cooperadora:</span>
+                        <span className="text-emerald-950 font-extrabold">${kit.cooperadoraAporte.toLocaleString('es-AR')}</span>
+                      </div>
                     )}
                   </div>
 
@@ -251,11 +257,48 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
                       : 'bg-slate-900 hover:bg-slate-800 text-white'
                   }`}
                 >
-                  <span>Elegir este Kit en la Galería</span>
+                  <span>Elegir esta opción en la Galería</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             ))}
+          </div>
+
+          {/* Cooperadora 20% Callout Banner */}
+          <div className="mt-10 max-w-4xl mx-auto bg-gradient-to-r from-emerald-900 to-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-emerald-700/40 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/30">
+                <span className="text-2xl">🎓</span>
+              </div>
+              <div>
+                <h4 className="text-base sm:text-lg font-bold font-['Outfit'] text-white">
+                  El 20% de cada venta queda para la cooperadora del colegio
+                </h4>
+                <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
+                  Sin que la institución administre cobros ni gestione nada — se calcula y se rinde automáticamente por cada evento.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4 shrink-0">
+              <div className="px-4 py-2.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 text-center">
+                <span className="block text-xl font-black text-amber-400 font-['Outfit']">$6.000</span>
+                <span className="text-[11px] text-slate-300">por Kit Impreso+Digital</span>
+              </div>
+              <div className="px-4 py-2.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 text-center">
+                <span className="block text-xl font-black text-amber-400 font-['Outfit']">$3.000</span>
+                <span className="text-[11px] text-slate-300">por Solo Digital HD</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Benchmark Comparison with Traditional Photography Service */}
+          <div className="mt-6 max-w-4xl mx-auto bg-white rounded-2xl p-6 border border-slate-200 text-xs text-slate-700 space-y-3 shadow-xs">
+            <p className="leading-relaxed">
+              <strong className="text-slate-900 font-bold">Comparación con el servicio actual del mercado:</strong> Hoy, en promedio, el servicio del día de fotos en el colegio cuesta entre <strong>$20.000 y $25.000</strong> por una carpeta más chica (3 fotos 15x21 + 4 fotos 6x4) y sin descarga digital. Por <strong>$30.000</strong>, el Kit Impreso + Digital suma un formato más grande (<strong>20x30cm</strong>) y la descarga en HD de regalo; quien prefiere no imprimir accede a las mismas 3 fotos en <strong>Solo Digital HD por $15.000</strong>.
+            </p>
+            <p className="text-slate-500 pt-2 border-t border-slate-100">
+              <strong>Otros eventos del año</strong> (actos patrios, deportes, salidas, muestras) se manejan con la misma lógica de elección libre: galería digital opcional por evento, desde <strong>$5.000</strong> por foto digital suelta para quien desee conservarla.
+            </p>
           </div>
         </div>
       </div>

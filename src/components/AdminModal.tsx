@@ -27,8 +27,8 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
       colegio: 'Colegio San Martín de Tours',
       alumno: 'Valentina Rossi (3° A)',
       tutor: 'Mariana Gómez (11 5489-3210)',
-      kit: 'Kit Clásico Impreso + Digital',
-      total: 16800,
+      kit: 'Kit Impreso + Digital',
+      total: 30000,
       metodoPago: 'mercadopago',
       estadoPago: 'aprobado',
       estadoEntrega: 'en_laboratorio'
@@ -39,8 +39,8 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
       colegio: 'Instituto Belgrano Day School',
       alumno: 'Mateo Benítez (1° B)',
       tutor: 'Diego Benítez (11 4455-9988)',
-      kit: 'Kit Digital HD',
-      total: 9500,
+      kit: 'Solo Digital HD',
+      total: 15000,
       metodoPago: 'transferencia',
       estadoPago: 'pendiente',
       estadoEntrega: 'recibido'
@@ -51,8 +51,8 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
       colegio: 'Colegio Santa María de San Isidro',
       alumno: 'Sofía Álvarez (5° Verde)',
       tutor: 'Luciana Álvarez (11 6722-1100)',
-      kit: 'Kit Colección Premium',
-      total: 24900,
+      kit: 'Kit Impreso + Digital',
+      total: 30000,
       metodoPago: 'mercadopago',
       estadoPago: 'aprobado',
       estadoEntrega: 'listo_descarga'

@@ -15,10 +15,12 @@ export interface Foto {
 export interface KitProducto {
   id: string;
   nombre: string;
+  subtitulo?: string;
   tagline: string;
   precio: number;
   precioOriginal?: number;
   popular?: boolean;
+  cooperadoraAporte?: number;
   incluye: string[];
   icono: string;
   fotosPermitidas: {

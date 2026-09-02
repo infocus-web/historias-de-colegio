@@ -73,7 +73,7 @@ export default function PortalFamiliasModal({
 
   // Step 3: Kit & Extras
   const [selectedKit, setSelectedKit] = useState<KitProducto>(
-    KITS_DISPONIBLES.find((k) => k.id === 'kit-clasico') || KITS_DISPONIBLES[1]
+    KITS_DISPONIBLES.find((k) => k.id === 'kit-clasico') || KITS_DISPONIBLES[0]
   );
   const [extraStickers, setExtraStickers] = useState(false);
   const [extraPortarretrato, setExtraPortarretrato] = useState(false);
@@ -172,8 +172,8 @@ export default function PortalFamiliasModal({
         alumno: 'Valentina Rossi (3° A)',
         tutor: 'Mariana Gómez',
         telefono: '1154893210',
-        kit: 'Kit Clásico Impreso + Digital',
-        total: 16800,
+        kit: 'Kit Impreso + Digital',
+        total: 30000,
         fecha: '02/09/2026',
         estado: 'en_laboratorio',
         estadoTexto: 'En Laboratorio Fotográfico',
@@ -188,8 +188,8 @@ export default function PortalFamiliasModal({
         alumno: 'Mateo Benítez (1° B)',
         tutor: 'Diego Benítez',
         telefono: '1144559988',
-        kit: 'Kit Digital HD',
-        total: 9500,
+        kit: 'Solo Digital HD',
+        total: 15000,
         fecha: '02/09/2026',
         estado: 'listo_descarga',
         estadoTexto: 'Descarga Digital HD Disponible',
@@ -204,16 +204,16 @@ export default function PortalFamiliasModal({
         alumno: 'Sofía Álvarez (5° Verde)',
         tutor: 'Luciana Álvarez',
         telefono: '1167221100',
-        kit: 'Kit Colección Premium',
-        total: 24900,
+        kit: 'Kit Impreso + Digital',
+        total: 30000,
         fecha: '01/09/2026',
         estado: 'en_camino',
         estadoTexto: 'Empacado & Rotulado',
-        descripcionEstado: 'El sobre conmemorativo y cuadro están empaquetados en sobre individual rotulado para ser entregados en la institución escolar.',
+        descripcionEstado: 'La carpeta conmemorativa y fotos ampliadas están empaquetadas en sobre individual rotulado para ser entregadas en la institución escolar.',
         pasoActual: 4,
         entregaEstimada: 'Fecha de entrega pautada con el colegio: Viernes 5 de Septiembre',
         descargaLista: true,
-      }
+      },
     ];
 
     const cleanNumber = query.replace(/\D/g, '');
@@ -921,13 +921,24 @@ export default function PortalFamiliasModal({
                           )}
                         </div>
 
-                        <p className="text-[11px] text-slate-500 mb-4 min-h-[30px]">{kit.tagline}</p>
+                        {kit.subtitulo && (
+                          <p className="text-[11px] font-semibold text-slate-700 mb-1">{kit.subtitulo}</p>
+                        )}
+                        <p className="text-[11px] text-slate-500 mb-3 min-h-[28px]">{kit.tagline}</p>
 
                         <div className="mb-4 pb-3 border-b border-slate-100">
-                          <span className="text-2xl font-extrabold text-slate-900 font-['Outfit']">
-                            ${kit.precio.toLocaleString('es-AR')}
-                          </span>
-                          <span className="text-xs text-slate-500 ml-1">ARS</span>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-2xl font-extrabold text-slate-900 font-['Outfit']">
+                              ${kit.precio.toLocaleString('es-AR')}
+                            </span>
+                            <span className="text-xs text-slate-500">ARS</span>
+                          </div>
+                          {kit.cooperadoraAporte && (
+                            <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60 text-[10px] font-bold">
+                              <span>🎓 Aporte Cooperadora:</span>
+                              <span className="font-extrabold">${kit.cooperadoraAporte.toLocaleString('es-AR')}</span>
+                            </div>
+                          )}
                         </div>
 
                         <ul className="space-y-2 mb-6">

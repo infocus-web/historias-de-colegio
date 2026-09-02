@@ -25,6 +25,9 @@ export default function InstitucionesSection({ onOpenSolicitud }: InstitucionesS
   // Interactive calculation
   const docentesEstimados = Math.round(alumnos / 25);
   const diasJornada = alumnos > 600 ? '2 a 3 mañanas' : alumnos > 300 ? '2 jornadas' : '1 jornada ágil';
+  // 20% Cooperadora estimated funds (avg $4.800 per student family purchase at ~70% conversion)
+  const familiasEstimadas = Math.round(alumnos * 0.7);
+  const fondoCooperadoraEstimado = familiasEstimadas * 4800;
 
   return (
     <section id="instituciones" className="py-16 lg:py-24 bg-slate-50 border-b border-slate-200/80">
@@ -70,9 +73,9 @@ export default function InstitucionesSection({ onOpenSolicitud }: InstitucionesS
             <div className="w-10 h-10 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center mb-4">
               <Gift className="w-6 h-6" />
             </div>
-            <h3 className="text-base font-bold text-slate-900 mb-2">Regalos para el Colegio</h3>
+            <h3 className="text-base font-bold text-slate-900 mb-2">20% para Cooperadora</h3>
             <p className="text-xs text-slate-600 leading-relaxed">
-              Foto grupal de recuerdo 100% de regalo para cada maestra y directivo, más un cuadro institucional conmemorativo de todo el establecimiento.
+              El 20% de cada venta queda para la cooperadora del colegio ($6.000 por Kit Impreso y $3.000 por Kit Digital), además de fotos de regalo para cada docente.
             </p>
           </div>
 
@@ -225,6 +228,15 @@ export default function InstitucionesSection({ onOpenSolicitud }: InstitucionesS
                     <div>
                       <span className="font-bold text-white">Legajo institucional: </span>
                       <span className="text-slate-300">100% de los retratos digitalizados para el colegio.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <div>
+                      <span className="font-bold text-white">Fondo para Cooperadora (20%): </span>
+                      <span className="text-amber-400 font-bold">~${fondoCooperadoraEstimado.toLocaleString('es-AR')} ARS </span>
+                      <span className="text-slate-300">(sin gestión del colegio).</span>
                     </div>
                   </div>
 
