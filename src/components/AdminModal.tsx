@@ -81,11 +81,11 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (adminPin === 'admin' || adminPin === '1234' || adminPin.toLowerCase() === 'foco') {
+    if (adminPin === 'admin' || adminPin === '1234' || adminPin.toLowerCase() === 'infocus') {
       setIsAuthenticated(true);
       setPinError('');
     } else {
-      setPinError('PIN incorrecto. Probá con "foco", "admin" o "1234".');
+      setPinError('PIN incorrecto. Probá con "infocus", "admin" o "1234".');
     }
   };
 
@@ -107,7 +107,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
         ctx.drawImage(img, 0, 0);
 
         ctx.save();
-        const text = 'FOCO ESCOLAR · MUESTRA';
+        const text = 'INFOCUS SCHOOLS · MUESTRA';
         const fontSize = Math.max(18, Math.round(canvas.width * 0.045));
         ctx.font = `bold ${fontSize}px sans-serif`;
         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -240,7 +240,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
                   setAdminPin(e.target.value);
                   setPinError('');
                 }}
-                placeholder="PIN (Probá: foco ó 1234)"
+                placeholder="PIN (Probá: infocus ó 1234)"
                 className="w-full text-center px-4 py-3 rounded-xl border border-slate-300 text-sm font-bold tracking-widest focus:ring-2 focus:ring-amber-500 focus:outline-none"
               />
               {pinError && <p className="text-xs text-rose-600 font-semibold">{pinError}</p>}
@@ -254,7 +254,7 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
             </form>
 
             <div className="text-[11px] text-slate-400">
-              PIN de demostración: <strong className="text-slate-600">foco</strong> o <strong className="text-slate-600">admin</strong>
+              PIN de demostración: <strong className="text-slate-600">infocus</strong> o <strong className="text-slate-600">admin</strong>
             </div>
           </div>
         ) : (

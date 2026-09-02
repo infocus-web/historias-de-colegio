@@ -88,7 +88,7 @@ export default function App() {
       {/* Floating Interactive WhatsApp Widget */}
       <WhatsAppFloating />
 
-      {/* Interactive Family Portal Modal ("Mi Foco Escolar") */}
+      {/* Interactive Family Portal Modal ("InFocus Schools") */}
       <PortalFamiliasModal
         isOpen={familiasModalOpen}
         onClose={() => setFamiliasModalOpen(false)}

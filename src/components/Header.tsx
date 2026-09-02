@@ -43,7 +43,7 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
               </>
             )}
             <a
-              href="https://wa.me/5491100000000?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta"
+              href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors"

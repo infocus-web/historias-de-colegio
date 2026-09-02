@@ -8,17 +8,17 @@ export default function WhatsAppFloating() {
     {
       icon: School,
       text: 'Soy directivo y quiero una propuesta para mi colegio',
-      encoded: 'Hola%20Foco%20Escolar,%20soy%20directivo%20y%20quisiera%20solicitar%20una%20propuesta%20para%20mi%20colegio',
+      encoded: 'Hola%20InFocus%20Schools,%20soy%20directivo%20y%20quisiera%20solicitar%20una%20propuesta%20para%20mi%20colegio',
     },
     {
       icon: User,
       text: 'Soy familia y tengo una consulta sobre mi pedido',
-      encoded: 'Hola%20Foco%20Escolar,%20soy%20familia%20y%20tengo%20una%20consulta%20sobre%20mi%20pedido',
+      encoded: 'Hola%20InFocus%20Schools,%20soy%20familia%20y%20tengo%20una%20consulta%20sobre%20mi%20pedido',
     },
     {
       icon: HelpCircle,
       text: 'Quiero consultar medios de pago y transferencias',
-      encoded: 'Hola%20Foco%20Escolar,%20quisiera%20consultar%20sobre%20medios%20de%20pago',
+      encoded: 'Hola%20InFocus%20Schools,%20quisiera%20consultar%20sobre%20medios%20de%20pago',
     },
   ];
 
@@ -34,9 +34,9 @@ export default function WhatsAppFloating() {
               </div>
               <div>
                 <p className="text-xs font-bold font-['Outfit'] leading-tight">
-                  Atención Foco Escolar
+                  Atención InFocus Schools
                 </p>
-                <p className="text-[10px] text-emerald-100">En línea · Respondemos al instante</p>
+                <p className="text-[10px] text-emerald-100">En línea · +54 9 11 2862-5916</p>
               </div>
             </div>
             <button
@@ -56,7 +56,7 @@ export default function WhatsAppFloating() {
               return (
                 <a
                   key={idx}
-                  href={`https://wa.me/5491100000000?text=${item.encoded}`}
+                  href={`https://wa.me/5491128625916?text=${item.encoded}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="p-2.5 bg-white hover:bg-emerald-50 rounded-xl border border-slate-200 hover:border-emerald-300 text-xs text-slate-800 transition-all flex items-center gap-2.5 group shadow-2xs block"
@@ -70,7 +70,7 @@ export default function WhatsAppFloating() {
 
           <div className="p-3 border-t border-slate-100 text-center bg-white">
             <a
-              href="https://wa.me/5491100000000?text=Hola%20Foco%20Escolar,%20quisiera%20hacer%20una%20consulta"
+              href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta"
               target="_blank"
               rel="noopener noreferrer"
               className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors"

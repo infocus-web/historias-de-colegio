@@ -80,9 +80,9 @@ export default function PortalFamiliasModal({
   const [extraLlavero, setExtraLlavero] = useState(false);
 
   // Step 4: Checkout
-  const [tutorNombre, setTutorNombre] = useState('Mariana Gómez (Mamá)');
-  const [tutorWhatsapp, setTutorWhatsapp] = useState('11 5489-3210');
-  const [tutorEmail, setTutorEmail] = useState('mariana.gomez@gmail.com');
+  const [tutorNombre, setTutorNombre] = useState('');
+  const [tutorWhatsapp, setTutorWhatsapp] = useState('');
+  const [tutorEmail, setTutorEmail] = useState('');
   const [metodoPago, setMetodoPago] = useState<'mercadopago' | 'transferencia'>('mercadopago');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [numeroPedido, setNumeroPedido] = useState('');
@@ -481,7 +481,7 @@ export default function PortalFamiliasModal({
 
                     <div className="flex gap-2 w-full sm:w-auto">
                       <a
-                        href={`https://wa.me/5491100000000?text=Hola%20InFocus%20Schools,%20consulto%20por%20mi%20pedido%20${searchedOrder.id}`}
+                        href={`https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20consulto%20por%20mi%20pedido%20${searchedOrder.id}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1 sm:flex-initial px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-2"
@@ -1359,7 +1359,7 @@ export default function PortalFamiliasModal({
 
               <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
                 <a
-                  href={`https://wa.me/5491100000000?text=Hola%20InFocus%20Schools,%20hice%20el%20pedido%20${numeroPedido}%20para%20${encodeURIComponent(
+                  href={`https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20hice%20el%20pedido%20${numeroPedido}%20para%20${encodeURIComponent(
                     nombreAlumno
                   )}`}
                   target="_blank"

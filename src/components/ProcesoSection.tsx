@@ -60,7 +60,7 @@ export default function ProcesoSection({ onOpenFamilias, onOpenInstituciones }: 
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="text-xs font-bold text-amber-700 uppercase tracking-widest px-3 py-1 bg-amber-50 rounded-full border border-amber-200/60 inline-block mb-3">
-            El Proceso Foco Escolar
+            El Proceso InFocus Schools
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-['Outfit']">
             Paso a paso, un sistema pensado para la tranquilidad de todos

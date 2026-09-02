@@ -19,7 +19,7 @@ export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo
                 <Camera className="w-5 h-5 stroke-[2.2]" />
               </div>
               <span className="text-xl font-bold tracking-tight font-['Outfit']">
-                FOCO<span className="text-amber-400">ESCOLAR</span>
+                INFOCUS<span className="text-amber-400">SCHOOLS</span>
               </span>
             </div>
 
@@ -86,7 +86,7 @@ export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo
                   onClick={() => onOpenFamilias()}
                   className="hover:text-amber-400 transition-colors cursor-pointer font-semibold text-amber-400"
                 >
-                  Acceso a Fotos (Mi Foco)
+                  Acceso a Fotos y Pedidos
                 </button>
               </li>
               <li>
@@ -126,21 +126,29 @@ export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo
                 <MapPin className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span>Buenos Aires, Argentina</span>
               </p>
-              <p className="flex items-center gap-2">
+              <a
+                href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 hover:text-emerald-400 transition-colors"
+              >
                 <PhoneCall className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span>WhatsApp: +54 9 11 0000-0000</span>
-              </p>
-              <p className="flex items-center gap-2">
+                <span>WhatsApp: +54 9 11 2862-5916</span>
+              </a>
+              <a
+                href="mailto:infocusfotografiayvideo@gmail.com"
+                className="flex items-center gap-2 hover:text-sky-400 transition-colors"
+              >
                 <Mail className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                <span>info@focoescolar.com</span>
-              </p>
+                <span className="truncate">infocusfotografiayvideo@gmail.com</span>
+              </a>
             </div>
           </div>
         </div>
 
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500">
-          <p>© {new Date().getFullYear()} Foco Escolar. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} InFocus Schools · InFocus Fotografía y Video. Todos los derechos reservados.</p>
           <div className="flex items-center gap-4 text-[11px]">
             <span>Defensa de las y los Consumidores</span>
             <span>·</span>

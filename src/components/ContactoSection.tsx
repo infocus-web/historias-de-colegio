@@ -39,9 +39,9 @@ export default function ContactoSection() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900">WhatsApp Oficial</p>
-                  <p className="text-xs text-slate-600 mt-0.5">+54 9 11 0000-0000</p>
+                  <p className="text-xs text-slate-600 mt-0.5">+54 9 11 2862-5916</p>
                   <a
-                    href="https://wa.me/5491100000000?text=Hola%20Foco%20Escolar,%20quisiera%20hacer%20una%20consulta"
+                    href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[11px] font-bold text-emerald-700 hover:underline block mt-1"
@@ -57,7 +57,7 @@ export default function ContactoSection() {
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-900">Correo Electrónico</p>
-                  <p className="text-xs text-slate-600 mt-0.5">contacto@focoescolar.com</p>
+                  <p className="text-xs text-slate-600 mt-0.5 font-medium">infocusfotografiayvideo@gmail.com</p>
                   <p className="text-[11px] text-slate-400">Respuesta promedio en menos de 2 hs</p>
                 </div>
               </div>
@@ -103,7 +103,7 @@ export default function ContactoSection() {
                 </div>
                 <h4 className="text-lg font-bold text-slate-900">¡Mensaje enviado con éxito!</h4>
                 <p className="text-xs text-slate-600">
-                  Muchas gracias por comunicarte con Foco Escolar. Te escribiremos pronto a tu email o WhatsApp.
+                  Muchas gracias por comunicarte con InFocus Schools. Te escribiremos pronto a tu email o WhatsApp.
                 </p>
                 <button
                   onClick={() => setEnviado(false)}
