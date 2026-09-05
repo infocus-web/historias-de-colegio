@@ -13,6 +13,7 @@ import {
 import { descargarLibroExcel } from '../services/excelDownloadHelper';
 import { SECCIONES_INICIAL_2026 } from '../data/alumnosData';
 import { CODIGOS_CURSOS_INICIALES } from '../data/codigosCursos';
+import ModalPlanillaExcelLab from './ModalPlanillaExcelLab';
 
 interface AdminLaboratorioTabProps {
   pedidos: PedidoEscolarCompleto[];
@@ -31,6 +32,7 @@ export default function AdminLaboratorioTab({
   const [isDescargandoZip, setIsDescargandoZip] = useState<boolean>(false);
   const [zipFeedbackMsg, setZipFeedbackMsg] = useState<string | null>(null);
   const [emailFeedbackMsg, setEmailFeedbackMsg] = useState<string | null>(null);
+  const [modalExcelAbierto, setModalExcelAbierto] = useState<boolean>(false);
 
   // Selected photo to preview backprint (defaults to the user's exact example)
   const [fotoPreviewDorso, setFotoPreviewDorso] = useState<{
@@ -140,39 +142,46 @@ export default function AdminLaboratorioTab({
     }
   };
 
+  // Datos estructurados para la planilla de control de pedidos en Excel
+  const datosPlanillaExcel = useMemo(() => {
+    return pedidosFiltrados.map((p, idx) => {
+      const codigoCliente = p.codigoAlumno || formatearCodigoCliente(p.cursoCodigo, p.alumnoNombre);
+      const listaArchivos = p.archivosParaLaboratorio && p.archivosParaLaboratorio.length > 0
+        ? p.archivosParaLaboratorio.map(a => `${a.tamanoImpresion}: ${a.nombreArchivoLab}`).join(' | ')
+        : '15x21 + 20x30';
+
+      return {
+        'N°': idx + 1,
+        'ID Pedido': p.id,
+        'Fecha': p.fecha,
+        'Código Cliente (Archivo Minilab)': codigoCliente,
+        'Curso / Sala': `${p.cursoCodigo} - ${p.grado} (${p.division})`,
+        'Turno': p.turno || 'Tarde',
+        'Alumno': p.alumnoNombre,
+        'N° Lista': p.alumnoNumeroLista || idx + 1,
+        'Tutor Responsable': p.tutorNombre,
+        'Teléfono': p.tutorTelefono,
+        'Email': p.tutorEmail,
+        'Kit Contratado': p.kitNombre,
+        'Cantidad Fotos': p.archivosParaLaboratorio?.length || 2,
+        'Archivos a Imprimir': listaArchivos,
+        'Estado Pago': p.estadoPago.toUpperCase(),
+        'Importe Total': `$${p.total.toLocaleString('es-AR')}`,
+        'Ubicación 15x21': `15x21/${codigoCliente}.jpg`,
+        'Ubicación 20x30': `20x30/${codigoCliente}.jpg`
+      };
+    });
+  }, [pedidosFiltrados]);
+
   // Exportar planilla de control de pedidos a Excel (.XLSX)
   const handleExportarExcelLaboratorio = () => {
+    // 1. Abrir de inmediato el modal de confirmación, descarga y vista previa
+    setModalExcelAbierto(true);
+
+    // 2. Intentar la descarga directa en segundo plano
     try {
       const wb = XLSX.utils.book_new();
-      const data = pedidosFiltrados.map((p, idx) => {
-        const codigoCliente = p.codigoAlumno || formatearCodigoCliente(p.cursoCodigo, p.alumnoNombre);
-        const listaArchivos = p.archivosParaLaboratorio && p.archivosParaLaboratorio.length > 0
-          ? p.archivosParaLaboratorio.map(a => `${a.tamanoImpresion}: ${a.nombreArchivoLab}`).join(' | ')
-          : '15x21 + 20x30';
-
-        return {
-          'N°': idx + 1,
-          'ID Pedido': p.id,
-          'Fecha': p.fecha,
-          'Código Cliente (Archivo Minilab)': codigoCliente,
-          'Curso / Sala': `${p.cursoCodigo} - ${p.grado} (${p.division})`,
-          'Turno': p.turno || 'Tarde',
-          'Alumno': p.alumnoNombre,
-          'N° Lista': p.alumnoNumeroLista || idx + 1,
-          'Tutor Responsable': p.tutorNombre,
-          'Teléfono': p.tutorTelefono,
-          'Email': p.tutorEmail,
-          'Kit Contratado': p.kitNombre,
-          'Cantidad Fotos': p.archivosParaLaboratorio?.length || 2,
-          'Archivos a Imprimir': listaArchivos,
-          'Estado Pago': p.estadoPago.toUpperCase(),
-          'Importe Total': `$${p.total.toLocaleString('es-AR')}`,
-          'Ubicación 15x21': `15x21/${codigoCliente}.jpg`,
-          'Ubicación 20x30': `20x30/${codigoCliente}.jpg`
-        };
-      });
-
-      const ws = XLSX.utils.json_to_sheet(data);
+      const ws = XLSX.utils.json_to_sheet(datosPlanillaExcel);
       ws['!cols'] = [
         { wch: 5 },
         { wch: 18 },
@@ -199,15 +208,13 @@ export default function AdminLaboratorioTab({
       const ok = descargarLibroExcel(wb, nombreArchivo);
 
       if (ok) {
-        setZipFeedbackMsg(`¡Planilla Excel exportada exitosamente: ${nombreArchivo}!`);
+        setZipFeedbackMsg(`¡Iniciando descarga de planilla Excel: ${nombreArchivo}!`);
       } else {
-        setZipFeedbackMsg('No se pudo iniciar la descarga de Excel. Por favor verifique los permisos de su navegador.');
+        setZipFeedbackMsg('Si tu navegador no descargó automáticamente, podés usar los botones del panel.');
       }
-      setTimeout(() => setZipFeedbackMsg(null), 4000);
+      setTimeout(() => setZipFeedbackMsg(null), 5000);
     } catch (err) {
       console.error('Error al exportar planilla Excel de laboratorio:', err);
-      setZipFeedbackMsg('Hubo un error al generar la planilla Excel.');
-      setTimeout(() => setZipFeedbackMsg(null), 4000);
     }
   };
 
@@ -621,6 +628,15 @@ export default function AdminLaboratorioTab({
           </table>
         </div>
       </div>
+
+      {/* Modal de Exportación y Vista Previa de Planilla Excel / CSV / Copiar */}
+      <ModalPlanillaExcelLab
+        isOpen={modalExcelAbierto}
+        onClose={() => setModalExcelAbierto(false)}
+        datosPlanilla={datosPlanillaExcel}
+        nombreColegio={colegioNombre}
+        cursoFiltro={cursoFiltro}
+      />
     </div>
   );
 }
