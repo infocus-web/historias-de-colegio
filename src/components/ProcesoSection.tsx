@@ -1,56 +1,55 @@
-import { Calendar, Camera, Laptop, CreditCard, PackageCheck, ArrowRight } from 'lucide-react';
+import { KeyRound, ShieldCheck, CheckSquare, CreditCard, Download, ArrowRight } from 'lucide-react';
 
 interface ProcesoSectionProps {
   onOpenFamilias: (colegioId?: string) => void;
-  onOpenInstituciones: () => void;
 }
 
-export default function ProcesoSection({ onOpenFamilias, onOpenInstituciones }: ProcesoSectionProps) {
+export default function ProcesoSection({ onOpenFamilias }: ProcesoSectionProps) {
   const pasos = [
     {
       paso: '01',
-      icono: Calendar,
-      titulo: 'Coordinamos la fecha',
-      subtitulo: 'Sin complicaciones',
+      icono: KeyRound,
+      titulo: 'Recibís el código',
+      subtitulo: 'Acceso directo a tu curso',
       descripcion:
-        'Fijamos el día con el equipo directivo y les facilitamos un comunicado digital listo para enviar por WhatsApp o cuaderno a las familias.',
-      destacado: 'Fecha y circular listas en 24 hs',
+        'Con el código provisto (ej: SALA3TM o TOURS26) ingresás directo al grado, división y turno exacto de tu hijo/a.',
+      destacado: 'Código único por curso',
     },
     {
       paso: '02',
-      icono: Camera,
-      titulo: 'Jornada fotográfica',
-      subtitulo: 'Luz natural y calidez',
+      icono: ShieldCheck,
+      titulo: 'Galería con marca de agua',
+      subtitulo: 'Segura y protegida',
       descripcion:
-        'Montamos un estudio ágil en el SUM o biblioteca. Tomamos múltiples retratos espontáneos por alumno, la foto grupal de grado y con la docente.',
-      destacado: '10 a 15 min por curso',
+        'Visualizás todas las tomas tomadas en la jornada escolar con marca de agua de protección y en alta definición.',
+      destacado: '100% privado y seguro',
     },
     {
       paso: '03',
-      icono: Laptop,
-      titulo: 'Galería online privada',
-      subtitulo: 'En 72 horas hábiles',
+      icono: CheckSquare,
+      titulo: 'Elegís las 3 fotos',
+      subtitulo: 'Tus favoritas de la nómina',
       descripcion:
-        'Cada familia ingresa con el nombre de su colegio o código privado para ver las fotos con marca de agua en alta resolución desde el celular.',
-      destacado: 'Segura y protegida',
+        'Elegís la foto grupal del grado, la mejor toma individual de tu hijo/a y el entrañable retrato con su maestra.',
+      destacado: '3 fotos incluidas por kit',
     },
     {
       paso: '04',
       icono: CreditCard,
-      titulo: 'Elección y pago digital',
-      subtitulo: '100% autogestionado',
+      titulo: 'Elegís tu formato',
+      subtitulo: 'Impreso + HD o Solo Digital',
       descripcion:
-        'Los papás eligen la toma favorita de su hijo/a, seleccionan su kit preferido y abonan por Mercado Pago o transferencia bancaria.',
-      destacado: '0 dinero en la escuela',
+        'Optás por el Kit Impreso con carpeta exclusiva y HD de regalo, o Solo Digital HD. Abonás seguro con Mercado Pago o Transferencia.',
+      destacado: 'Sin sobres ni efectivo',
     },
     {
       paso: '05',
-      icono: PackageCheck,
-      titulo: 'Descarga HD y entrega',
-      subtitulo: 'Rápido y prolijo',
+      icono: Download,
+      titulo: 'Descarga HD y copias',
+      subtitulo: 'Al instante en tu celular',
       descripcion:
-        'Descarga digital inmediata al confirmar el pago. Los pedidos impresos se entregan al colegio en sobres cerrados y rotulados por grado y división.',
-      destacado: 'Envío automático por WhatsApp',
+        'Descargás los archivos en máxima resolución al instante en tu teléfono. Si compraste impresas, se entregan en sobre cerrado rotulado.',
+      destacado: 'Respaldo por email y WhatsApp',
     },
   ];
 
@@ -60,19 +59,19 @@ export default function ProcesoSection({ onOpenFamilias, onOpenInstituciones }: 
         {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <span className="text-xs font-bold text-amber-700 uppercase tracking-widest px-3 py-1 bg-amber-50 rounded-full border border-amber-200/60 inline-block mb-3">
-            El Proceso InFocus Schools
+            Guía para Familias
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-['Outfit']">
-            Paso a paso, un sistema pensado para la tranquilidad de todos
+            Cómo acceder, elegir y recibir las fotos de tus hijos
           </h2>
           <p className="text-base sm:text-lg text-slate-600 mt-3">
-            Desde el primer contacto hasta la entrega de los recuerdos en papel fotográfico de alta calidad.
+            Un proceso 100% digital, pensado para que elijas desde la comodidad de tu celular sin trámites ni complicaciones.
           </p>
         </div>
 
         {/* Steps Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 relative">
-          {pasos.map((p, idx) => {
+          {pasos.map((p) => {
             const Icon = p.icono;
             return (
               <div
@@ -109,25 +108,19 @@ export default function ProcesoSection({ onOpenFamilias, onOpenInstituciones }: 
         <div className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
           <div className="text-left">
             <h4 className="text-lg font-bold font-['Outfit'] text-white">
-              ¿Querés probar la experiencia desde el punto de vista de una familia?
+              ¿Querés probar la experiencia antes de recibir el código?
             </h4>
             <p className="text-xs text-slate-300 mt-0.5">
-              Accedé a la galería interactiva de demostración con fotos de muestra y probá la selección.
+              Accedé a la galería interactiva de demostración con fotos de muestra y probá el selector de tomas.
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <button
               onClick={() => onOpenFamilias('col-5')}
-              className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md shadow-amber-400/20 flex items-center gap-2 cursor-pointer"
+              className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md shadow-amber-400/20 flex items-center gap-2 cursor-pointer"
             >
-              <span>Ver Galería Demo</span>
+              <span>Ver Galería Demo Interactiva</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={onOpenInstituciones}
-              className="px-4 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs rounded-xl transition-colors cursor-pointer"
-            >
-              <span>Soy Directivo</span>
             </button>
           </div>
         </div>

@@ -1,19 +1,19 @@
 import { useState } from 'react';
-import { MessageCircle, X, Send, School, User, HelpCircle } from 'lucide-react';
+import { MessageCircle, X, Send, KeyRound, User, HelpCircle } from 'lucide-react';
 
 export default function WhatsAppFloating() {
   const [isOpen, setIsOpen] = useState(false);
 
   const predefined = [
     {
-      icon: School,
-      text: 'Soy directivo y quiero una propuesta para mi colegio',
-      encoded: 'Hola%20InFocus%20Schools,%20soy%20directivo%20y%20quisiera%20solicitar%20una%20propuesta%20para%20mi%20colegio',
+      icon: User,
+      text: 'Soy familia y tengo una consulta sobre las fotos de mi hijo/a',
+      encoded: 'Hola%20InFocus%20Schools,%20soy%20familia%20y%20tengo%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a',
     },
     {
-      icon: User,
-      text: 'Soy familia y tengo una consulta sobre mi pedido',
-      encoded: 'Hola%20InFocus%20Schools,%20soy%20familia%20y%20tengo%20una%20consulta%20sobre%20mi%20pedido',
+      icon: KeyRound,
+      text: 'Necesito ayuda con el código de acceso a mi curso',
+      encoded: 'Hola%20InFocus%20Schools,%20necesito%20ayuda%20con%20el%20código%20de%20acceso%20a%20mi%20curso',
     },
     {
       icon: HelpCircle,

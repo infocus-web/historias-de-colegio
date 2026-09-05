@@ -2,18 +2,17 @@ import { Camera, Heart, ShieldCheck, PhoneCall, Mail, MapPin, Lock } from 'lucid
 
 interface FooterProps {
   onOpenFamilias: () => void;
-  onOpenInstituciones: () => void;
   onScrollTo: (id: string) => void;
   onOpenAdmin?: () => void;
 }
 
-export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo, onOpenAdmin }: FooterProps) {
+export default function Footer({ onOpenFamilias, onScrollTo, onOpenAdmin }: FooterProps) {
   return (
     <footer className="bg-slate-900 text-slate-400 text-xs border-t border-slate-800 pt-16 pb-12">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-slate-800 text-left">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 pb-12 border-b border-slate-800 text-left">
           {/* Brand Info */}
-          <div className="lg:col-span-2 space-y-4">
+          <div className="space-y-4">
             <div className="flex items-center gap-2.5 text-white">
               <div className="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold">
                 <Camera className="w-5 h-5 stroke-[2.2]" />
@@ -23,78 +22,28 @@ export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo
               </span>
             </div>
 
-            <p className="text-slate-400 leading-relaxed max-w-sm">
-              Plataforma y servicio integral de fotografía escolar para colegios y familias de la República Argentina.
-              Sin cobro de dinero en la institución, con selección 100% online y los más altos estándares de calidad fotográfica.
+            <p className="text-slate-400 leading-relaxed">
+              Portal fotográfico escolar exclusivo para familias. Selección de tomas online, pago digital seguro y descarga inmediata de fotos en alta definición.
             </p>
 
             <div className="flex items-center gap-2 text-slate-300 font-medium">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <span>Transacciones seguras procesadas con Mercado Pago</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Transacciones seguras con Mercado Pago y Transferencia</span>
             </div>
-          </div>
-
-          {/* Institutional Links */}
-          <div className="space-y-3">
-            <p className="text-xs font-bold text-white uppercase tracking-wider">
-              Instituciones
-            </p>
-            <ul className="space-y-2">
-              <li>
-                <button
-                  onClick={() => onScrollTo('instituciones')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
-                >
-                  Servicio para Colegios
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={onOpenInstituciones}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
-                >
-                  Pedir Propuesta Escolar
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onScrollTo('instituciones')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
-                >
-                  Simulador de Jornada
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onScrollTo('faq')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
-                >
-                  Preguntas de Directivos
-                </button>
-              </li>
-            </ul>
           </div>
 
           {/* Families Links */}
           <div className="space-y-3">
             <p className="text-xs font-bold text-white uppercase tracking-wider">
-              Familias
+              Acceso Familias
             </p>
             <ul className="space-y-2">
               <li>
                 <button
                   onClick={() => onOpenFamilias()}
-                  className="hover:text-amber-400 transition-colors cursor-pointer font-semibold text-amber-400"
+                  className="hover:text-amber-400 transition-colors cursor-pointer font-bold text-amber-400"
                 >
-                  Acceso a Fotos y Pedidos
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => onScrollTo('muestrario')}
-                  className="hover:text-amber-400 transition-colors cursor-pointer"
-                >
-                  Kits y Productos
+                  Ver Fotos de mi Hijo/a
                 </button>
               </li>
               <li>
@@ -102,7 +51,15 @@ export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo
                   onClick={() => onScrollTo('proceso')}
                   className="hover:text-amber-400 transition-colors cursor-pointer"
                 >
-                  Cómo Comprar Online
+                  Cómo Funciona el Acceso
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => onScrollTo('muestrario')}
+                  className="hover:text-amber-400 transition-colors cursor-pointer"
+                >
+                  Kits y Formatos Disponibles
                 </button>
               </li>
               <li>
@@ -116,10 +73,31 @@ export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo
             </ul>
           </div>
 
+          {/* Kits & Quality */}
+          <div className="space-y-3">
+            <p className="text-xs font-bold text-white uppercase tracking-wider">
+              Formatos y Productos
+            </p>
+            <ul className="space-y-2 text-slate-400">
+              <li>
+                <span className="text-slate-300 font-medium">Kit Impreso + Digital ($30.000)</span>
+                <p className="text-[11px] text-slate-500">20x30 + 15x21 + carpeta + HD de regalo</p>
+              </li>
+              <li>
+                <span className="text-slate-300 font-medium">Solo Digital HD ($15.000)</span>
+                <p className="text-[11px] text-slate-500">3 fotos en máxima resolución sin marcas</p>
+              </li>
+              <li>
+                <span className="text-slate-300 font-medium">Fotos Sueltas de Actos ($5.000)</span>
+                <p className="text-[11px] text-slate-500">Galería opcional por evento del año</p>
+              </li>
+            </ul>
+          </div>
+
           {/* Zones & Contact */}
           <div className="space-y-3">
             <p className="text-xs font-bold text-white uppercase tracking-wider">
-              Contacto
+              Atención y Contacto
             </p>
             <div className="space-y-2 text-slate-400">
               <p className="flex items-center gap-2">
@@ -127,7 +105,7 @@ export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo
                 <span>Buenos Aires, Argentina</span>
               </p>
               <a
-                href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta"
+                href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20tengo%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 hover:text-emerald-400 transition-colors"
@@ -148,11 +126,11 @@ export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo
 
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500">
-          <p>© {new Date().getFullYear()} InFocus Schools · InFocus Fotografía y Video. Todos los derechos reservados.</p>
+          <p>© {new Date().getFullYear()} InFocus Schools · InFocus Fotografía y Video. Portal de Familias.</p>
           <div className="flex items-center gap-4 text-[11px]">
-            <span>Defensa de las y los Consumidores</span>
+            <span>Defensa del Consumidor</span>
             <span>·</span>
-            <span>Términos y Privacidad Escolar</span>
+            <span>Privacidad y Protección de Menores</span>
             {onOpenAdmin && (
               <>
                 <span>·</span>
@@ -161,7 +139,7 @@ export default function Footer({ onOpenFamilias, onOpenInstituciones, onScrollTo
                   className="text-slate-400 hover:text-amber-400 flex items-center gap-1 cursor-pointer transition-colors"
                 >
                   <Lock className="w-3 h-3" />
-                  <span>Acceso Fotógrafo</span>
+                  <span>Panel Fotógrafo</span>
                 </button>
               </>
             )}

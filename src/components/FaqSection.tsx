@@ -1,16 +1,13 @@
 import { useState } from 'react';
-import { HelpCircle, ChevronDown, Users, School } from 'lucide-react';
+import { HelpCircle, ChevronDown, Users } from 'lucide-react';
 import { PREGUNTAS_FRECUENTES } from '../data/colegiosData';
 
 export default function FaqSection() {
-  const [tab, setTab] = useState<'familias' | 'colegios'>('familias');
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   const toggle = (i: number) => {
     setOpenIdx(openIdx === i ? null : i);
   };
-
-  const list = tab === 'familias' ? PREGUNTAS_FRECUENTES.familias : PREGUNTAS_FRECUENTES.colegios;
 
   return (
     <section id="faq" className="py-16 lg:py-24 bg-white border-b border-slate-200/80">
@@ -18,52 +15,19 @@ export default function FaqSection() {
         {/* Header */}
         <div className="text-center mb-12">
           <span className="text-xs font-bold text-slate-700 uppercase tracking-widest px-3 py-1 bg-slate-100 rounded-full border border-slate-200 inline-block mb-3">
-            Dudas y Consultas Frecuentes
+            Dudas y Consultas de Familias
           </span>
           <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight font-['Outfit']">
-            Todo lo que necesitás saber
+            Preguntas Frecuentes
           </h2>
           <p className="text-sm sm:text-base text-slate-600 mt-2">
-            Respuestas claras y directas tanto para padres como para directores escolares.
+            Respuestas claras y directas para acceder, elegir y disfrutar las fotos escolares de tus hijos.
           </p>
-        </div>
-
-        {/* Tab Switcher */}
-        <div className="flex justify-center gap-3 mb-8">
-          <button
-            onClick={() => {
-              setTab('familias');
-              setOpenIdx(0);
-            }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-              tab === 'familias'
-                ? 'bg-amber-400 text-slate-950 shadow-sm shadow-amber-400/30'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Users className="w-4 h-4" />
-            <span>Preguntas de Familias</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setTab('colegios');
-              setOpenIdx(0);
-            }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer ${
-              tab === 'colegios'
-                ? 'bg-slate-900 text-white shadow-sm'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <School className="w-4 h-4" />
-            <span>Preguntas de Colegios</span>
-          </button>
         </div>
 
         {/* Accordion list */}
         <div className="space-y-3 text-left">
-          {list.map((item, idx) => {
+          {PREGUNTAS_FRECUENTES.map((item, idx) => {
             const isOpen = openIdx === idx;
             return (
               <div

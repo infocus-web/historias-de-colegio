@@ -28,7 +28,7 @@ export default function ContactoSection() {
                 Estamos para ayudarte
               </h2>
               <p className="text-sm text-slate-600 mt-2">
-                Tanto si sos directivo y buscás coordinar una reunión, como si sos familia y necesitás asistencia con tu pedido escolar.
+                Asistencia y soporte directo para las familias. Si tenés dudas sobre el código de acceso a tu curso, la selección de tomas o la descarga de tus fotos HD, escribinos.
               </p>
             </div>
 
@@ -168,9 +168,11 @@ export default function ContactoSection() {
                       onChange={(e) => setAsunto(e.target.value)}
                       className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-400"
                     >
-                      <option>Soy directivo y quiero fotos en mi colegio</option>
-                      <option>Soy familia y tengo una duda sobre mi pedido</option>
+                      <option>Duda con el código de acceso a mi curso</option>
+                      <option>Consulta sobre las fotos de mi hijo/a</option>
                       <option>Consulta sobre pagos o transferencias</option>
+                      <option>Ayuda para descargar mis fotos en HD</option>
+                      <option>Consulta sobre entrega de kit impreso</option>
                       <option>Otro motivo</option>
                     </select>
                   </div>

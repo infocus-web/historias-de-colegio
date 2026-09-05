@@ -1,13 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { Search, ShieldCheck, CheckCircle, ArrowRight, Sparkles, School, Eye, Lock } from 'lucide-react';
 import { COLEGIOS_EJEMPLO } from '../data/colegiosData';
+import WatermarkOverlay from './WatermarkOverlay';
 
 interface HeroProps {
-  onOpenFamilias: (colegioId?: string) => void;
-  onOpenInstituciones: () => void;
+  onOpenFamilias: (colegioId?: string, codigo?: string) => void;
 }
 
-export default function Hero({ onOpenFamilias, onOpenInstituciones }: HeroProps) {
+export default function Hero({ onOpenFamilias }: HeroProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showWatermark, setShowWatermark] = useState(true);
 
@@ -20,10 +20,11 @@ export default function Hero({ onOpenFamilias, onOpenInstituciones }: HeroProps)
 
   const handleSearchSubmit = (e: FormEvent) => {
     e.preventDefault();
+    const term = searchTerm.trim();
     if (filteredColegios.length > 0) {
-      onOpenFamilias(filteredColegios[0].id);
+      onOpenFamilias(filteredColegios[0].id, term || undefined);
     } else {
-      onOpenFamilias();
+      onOpenFamilias(undefined, term || undefined);
     }
   };
 
@@ -41,23 +42,19 @@ export default function Hero({ onOpenFamilias, onOpenInstituciones }: HeroProps)
           <div className="lg:col-span-7 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100/80 border border-amber-200/80 text-amber-900 text-xs font-semibold tracking-wide">
               <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-              <span>El nuevo estándar en fotografía escolar argentina</span>
+              <span>Portal exclusivo para familias y padres</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.12] font-['Outfit']">
-              Las fotos del colegio,{' '}
+              Las fotos de tus hijos,{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-amber-500 to-amber-700">
                 directo al celular
               </span>{' '}
-              de cada familia
+              y en alta calidad
             </h1>
 
             <p className="text-lg sm:text-xl text-slate-600 leading-relaxed max-w-2xl font-normal">
-              Retratos escolares con luz natural y calidez humana. Cada familia elige online
-              la foto que más le gusta y paga de forma digital.
-              <strong className="text-slate-900 font-semibold block mt-1">
-                El colegio no toca dinero, no junta sobres ni reparte planillas.
-              </strong>
+              Retratos escolares con luz natural y calidez. Ingresá con el código de tu curso, elegí las 3 tomas favoritas de tu hijo/a (grupal, individual y con la docente) y recibí la descarga HD o el kit impreso en carpeta.
             </p>
 
             {/* School Search Box */}
@@ -97,9 +94,9 @@ export default function Hero({ onOpenFamilias, onOpenInstituciones }: HeroProps)
               <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
                 <span className="font-medium text-slate-400 flex items-center gap-1">
                   <School className="w-3.5 h-3.5" />
-                  Colegios de muestra:
+                  Colegios disponibles:
                 </span>
-                {COLEGIOS_EJEMPLO.slice(0, 3).map((col) => (
+                {COLEGIOS_EJEMPLO.slice(0, 4).map((col) => (
                   <button
                     key={col.id}
                     onClick={() => onOpenFamilias(col.id)}
@@ -108,12 +105,6 @@ export default function Hero({ onOpenFamilias, onOpenInstituciones }: HeroProps)
                     {col.nombre.replace('Colegio ', '').replace('Instituto ', '')}
                   </button>
                 ))}
-                <button
-                  onClick={() => onOpenFamilias('col-5')}
-                  className="px-2.5 py-1 rounded-md bg-amber-100 text-amber-900 hover:bg-amber-200 transition-colors font-semibold cursor-pointer"
-                >
-                  Demo abierta (Probar)
-                </button>
               </div>
             </div>
 
@@ -145,23 +136,8 @@ export default function Hero({ onOpenFamilias, onOpenInstituciones }: HeroProps)
                   className="w-full h-full object-cover object-center transform group-hover:scale-102 transition-transform duration-500"
                 />
 
-                {/* Simulated Watermark Overlay */}
-                {showWatermark && (
-                  <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
-                    <div className="w-[180%] h-[180%] flex flex-col justify-around rotate-[-25deg] select-none opacity-40">
-                      {[...Array(9)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="flex justify-around text-white font-black tracking-widest text-sm drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap"
-                        >
-                          <span>INFOCUS SCHOOLS · MUESTRA</span>
-                          <span>INFOCUS SCHOOLS · MUESTRA</span>
-                          <span>INFOCUS SCHOOLS · MUESTRA</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Simulated Watermark Overlay matching exact sample style */}
+                <WatermarkOverlay visible={showWatermark} />
 
                 {/* Top Badge */}
                 <div className="absolute top-3 left-3 right-3 flex items-center justify-between">

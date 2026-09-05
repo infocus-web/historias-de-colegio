@@ -16,9 +16,9 @@ export default function TrustStats() {
     },
     {
       icon: ShieldCheck,
-      valor: '0 Cobranzas',
-      etiqueta: 'En el Colegio',
-      descripcion: 'Maestras y directivos 100% libres de tareas contables o sobres.',
+      valor: '100% Digital',
+      etiqueta: 'Pago Seguro Online',
+      descripcion: 'Aboná con Mercado Pago o Transferencia desde tu celular, sin efectivo ni sobres.',
     },
     {
       icon: Zap,

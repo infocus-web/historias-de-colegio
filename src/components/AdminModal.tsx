@@ -1,32 +1,115 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   X, Lock, Camera, Upload, CheckCircle2, DollarSign, Package, 
-  School, RefreshCw, Eye, AlertCircle, ArrowRight
+  School, RefreshCw, Eye, AlertCircle, ArrowRight, Users, Search, CheckSquare, Square, Download,
+  Key, Copy, Check, MessageSquare, Sparkles, Send, ExternalLink
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA, KITS_DISPONIBLES } from '../data/colegiosData';
+import { ALUMNOS_NOMINA_2026, SECCIONES_INICIAL_2026 } from '../data/alumnosData';
+import { 
+  getCodigosCursos, guardarCodigoCurso, regenerarTodosLosCodigos, getMensajeWhatsAppParaCurso 
+} from '../data/codigosCursos';
 import { Colegio, Foto } from '../types';
 
 interface AdminModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onProbarCodigo?: (codigo: string) => void;
 }
 
-export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
+export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminModalProps) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminPin, setAdminPin] = useState('');
   const [pinError, setPinError] = useState('');
 
   // Admin tabs
-  const [activeTab, setActiveTab] = useState<'pedidos' | 'subir' | 'colegios'>('pedidos');
+  const [activeTab, setActiveTab] = useState<'pedidos' | 'codigos' | 'alumnos' | 'subir' | 'colegios'>('pedidos');
 
-  // Simulated orders
+  // Course codes state
+  const [codigosMap, setCodigosMap] = useState<Record<string, string>>(() => getCodigosCursos());
+  const [copiadoFeedback, setCopiadoFeedback] = useState<string | null>(null);
+  const [filtroSalaCodigos, setFiltroSalaCodigos] = useState<string>('todas');
+  const [mensajeWhatsAppModal, setMensajeWhatsAppModal] = useState<{ seccion: any; codigo: string; texto: string } | null>(null);
+
+  const handleCopiarTexto = (texto: string, label: string) => {
+    navigator.clipboard.writeText(texto);
+    setCopiadoFeedback(label);
+    setTimeout(() => setCopiadoFeedback(null), 2500);
+  };
+
+  const handleGuardarCodigo = (seccionId: string, nuevoCodigo: string) => {
+    const updated = guardarCodigoCurso(seccionId, nuevoCodigo);
+    setCodigosMap(updated);
+    setCopiadoFeedback(`Código guardado: ${nuevoCodigo.toUpperCase()}`);
+    setTimeout(() => setCopiadoFeedback(null), 2000);
+  };
+
+  const handleRegenerarCodigos = (tipo: 'nemotecnico' | 'pin') => {
+    const updated = regenerarTodosLosCodigos(tipo);
+    setCodigosMap(updated);
+    setCopiadoFeedback('¡Códigos regenerados exitosamente para todos los cursos!');
+    setTimeout(() => setCopiadoFeedback(null), 2500);
+  };
+
+  const handleExportarPlanillaCSV = () => {
+    const encabezados = ['Seccion ID', 'Sala / Curso', 'Turno', 'Division', 'Nombre Completo', 'Total Alumnos', 'Codigo de Acceso'];
+    const filas = SECCIONES_INICIAL_2026.map(sec => [
+      sec.id,
+      `"${sec.sala}"`,
+      `"${sec.turno}"`,
+      `"${sec.division}"`,
+      `"${sec.nombreCompleto}"`,
+      sec.totalAlumnos,
+      `"${codigosMap[sec.id] || ''}"`,
+    ]);
+    const csvContent = 'data:text/csv;charset=utf-8,' + [encabezados.join(','), ...filas.map(f => f.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', 'codigos_cursos_fotos_2026.csv');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Alumnos roster states
+  const [filtroSeccionAlumnos, setFiltroSeccionAlumnos] = useState<string>('todas');
+  const [busquedaAlumnos, setBusquedaAlumnos] = useState<string>('');
+  const [checkedAlumnos, setCheckedAlumnos] = useState<Record<string, boolean>>({});
+
+  const toggleCheckAlumno = (id: string) => {
+    setCheckedAlumnos(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleSelectAllSeccion = () => {
+    const allChecked = alumnosFiltradosAdmin.every(a => checkedAlumnos[a.id]);
+    const next = { ...checkedAlumnos };
+    alumnosFiltradosAdmin.forEach(a => {
+      next[a.id] = !allChecked;
+    });
+    setCheckedAlumnos(next);
+  };
+
+  const alumnosFiltradosAdmin = useMemo(() => {
+    return ALUMNOS_NOMINA_2026.filter((alu) => {
+      const matchSeccion = filtroSeccionAlumnos === 'todas' || alu.seccionId === filtroSeccionAlumnos;
+      const q = busquedaAlumnos.toLowerCase().trim();
+      const matchSearch = !q || 
+        `${alu.apellido} ${alu.nombre}`.toLowerCase().includes(q) ||
+        `${alu.nombre} ${alu.apellido}`.toLowerCase().includes(q) ||
+        alu.grado.toLowerCase().includes(q);
+      return matchSeccion && matchSearch;
+    });
+  }, [filtroSeccionAlumnos, busquedaAlumnos]);
+
+  // Simulated orders with real students from roster
   const [pedidos, setPedidos] = useState([
     {
       id: 'FOC-2026-8812',
       fecha: '02/09/2026 10:30',
-      colegio: 'Colegio San Martín de Tours',
-      alumno: 'Valentina Rossi (3° A)',
-      tutor: 'Mariana Gómez (11 5489-3210)',
+      colegio: 'Nivel Inicial 2026',
+      alumno: 'Abba Fazio, Agustín (Sala 3 TM)',
+      tutor: 'Mariana Fazio (11 5489-3210)',
       kit: 'Kit Impreso + Digital',
       total: 30000,
       metodoPago: 'mercadopago',
@@ -36,9 +119,9 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
     {
       id: 'FOC-2026-8809',
       fecha: '02/09/2026 09:15',
-      colegio: 'Instituto Belgrano Day School',
-      alumno: 'Mateo Benítez (1° B)',
-      tutor: 'Diego Benítez (11 4455-9988)',
+      colegio: 'Nivel Inicial 2026',
+      alumno: 'Arbelo, Niza (Sala 4 A)',
+      tutor: 'Diego Arbelo (11 4455-9988)',
       kit: 'Solo Digital HD',
       total: 15000,
       metodoPago: 'transferencia',
@@ -48,9 +131,9 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
     {
       id: 'FOC-2026-8795',
       fecha: '01/09/2026 18:40',
-      colegio: 'Colegio Santa María de San Isidro',
-      alumno: 'Sofía Álvarez (5° Verde)',
-      tutor: 'Luciana Álvarez (11 6722-1100)',
+      colegio: 'Nivel Inicial 2026',
+      alumno: 'Amigo, Justina Lucía (Sala 5 A)',
+      tutor: 'Luciana Amigo (11 6722-1100)',
       kit: 'Kit Impreso + Digital',
       total: 30000,
       metodoPago: 'mercadopago',
@@ -286,9 +369,11 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
             </div>
 
             {/* Navigation tabs */}
-            <div className="flex border-b border-slate-200 gap-4">
+            <div className="flex border-b border-slate-200 gap-4 overflow-x-auto pb-0.5">
               {[
                 { id: 'pedidos', label: 'Pedidos de Familias', icon: Package },
+                { id: 'codigos', label: 'Generar Códigos por Curso', icon: Key },
+                { id: 'alumnos', label: `Nómina 2026 (${ALUMNOS_NOMINA_2026.length})`, icon: Users },
                 { id: 'subir', label: 'Subir Fotos con Marca de Agua', icon: Camera },
                 { id: 'colegios', label: 'Colegios y Códigos', icon: School },
               ].map(t => {
@@ -378,7 +463,393 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
               </div>
             )}
 
-            {/* TAB 2: SUBIR FOTOS */}
+            {/* TAB: GENERAR CÓDIGOS POR CURSO */}
+            {activeTab === 'codigos' && (
+              <div className="space-y-6 text-left">
+                {/* Feedback toast */}
+                {copiadoFeedback && (
+                  <div className="p-3.5 bg-emerald-50 border border-emerald-300 text-emerald-950 rounded-2xl text-xs font-bold flex items-center justify-between gap-2 shadow-xs animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                      <span>{copiadoFeedback}</span>
+                    </div>
+                    <button 
+                      onClick={() => setCopiadoFeedback(null)} 
+                      className="text-[11px] text-emerald-700 hover:text-emerald-900"
+                    >
+                      Entendido
+                    </button>
+                  </div>
+                )}
+
+                {/* Header & Quick Action Buttons */}
+                <div className="bg-amber-50/90 border border-amber-200 rounded-3xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 shadow-xs">
+                  <div className="space-y-1.5">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-200/80 text-amber-900 text-[10px] font-extrabold uppercase tracking-wider">
+                      <Sparkles className="w-3 h-3 text-amber-700" />
+                      <span>Herramienta Oficial del Fotógrafo</span>
+                    </div>
+                    <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2 font-['Outfit']">
+                      <Key className="w-5 h-5 text-amber-600" />
+                      <span>Generar Códigos de Acceso por Curso</span>
+                    </h3>
+                    <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+                      Generá y administrá el código exclusivo de cada sala y turno. Las familias ingresan con este código, eligen curso, división y turno, visualizan las fotos con marca de agua y eligen las <strong>3 fotos que están incluidas</strong>.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleRegenerarCodigos('nemotecnico')}
+                      className="px-3.5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
+                      title="Genera códigos legibles como SALA3-TM, SALA4-A, etc."
+                    >
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Generar Nemotécnicos</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleRegenerarCodigos('pin')}
+                      className="px-3.5 py-2.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
+                      title="Genera códigos PIN aleatorios como INF3-412"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Generar PINs</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleExportarPlanillaCSV}
+                      className="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>Descargar CSV</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filter Tabs by Sala */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="flex gap-1.5 p-1 bg-slate-100 rounded-xl">
+                    {['todas', 'Sala 3', 'Sala 4', 'Sala 5'].map((tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setFiltroSalaCodigos(tab)}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                          filtroSalaCodigos === tab
+                            ? 'bg-white text-slate-950 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        {tab === 'todas' ? `Todos los Cursos (${SECCIONES_INICIAL_2026.length})` : tab}
+                      </button>
+                    ))}
+                  </div>
+
+                  <span className="text-xs text-slate-500 font-medium">
+                    11 cursos configurados · 211 alumnos en nómina
+                  </span>
+                </div>
+
+                {/* Course Codes List Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {SECCIONES_INICIAL_2026
+                    .filter((sec) => filtroSalaCodigos === 'todas' || sec.sala.includes(filtroSalaCodigos))
+                    .map((sec) => {
+                      const currentCode = codigosMap[sec.id] || '';
+                      return (
+                        <div
+                          key={sec.id}
+                          className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-xs space-y-3.5 hover:border-amber-300 transition-colors"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h4 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                                <School className="w-4 h-4 text-amber-600 shrink-0" />
+                                <span>{sec.nombreCompleto}</span>
+                              </h4>
+                              <p className="text-[11px] text-slate-500 mt-0.5">
+                                {sec.sala} · Turno {sec.turno} · Div. {sec.division}
+                              </p>
+                            </div>
+                            <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-[11px] font-bold shrink-0">
+                              {sec.totalAlumnos} alumnos
+                            </span>
+                          </div>
+
+                          {/* Code edit input */}
+                          <div className="space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                            <label className="text-[10px] uppercase font-extrabold text-slate-500 tracking-wider flex items-center justify-between">
+                              <span>Código para las familias:</span>
+                              <span className="text-[10px] text-slate-400 font-normal">Editable al tipear</span>
+                            </label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                defaultValue={currentCode}
+                                key={currentCode}
+                                onBlur={(e) => {
+                                  const val = e.target.value.trim().toUpperCase();
+                                  if (val && val !== currentCode) {
+                                    handleGuardarCodigo(sec.id, val);
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    const val = (e.target as HTMLInputElement).value.trim().toUpperCase();
+                                    if (val) handleGuardarCodigo(sec.id, val);
+                                  }
+                                }}
+                                className="px-3 py-1.5 text-xs font-mono font-black uppercase bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-400 w-full tracking-wider"
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleCopiarTexto(currentCode, `Código ${currentCode} copiado al portapapeles`)}
+                                className="px-3 py-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold rounded-lg flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                                title="Copiar código al portapapeles"
+                              >
+                                <Copy className="w-3.5 h-3.5" />
+                                <span>Copiar</span>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Actions */}
+                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const msg = getMensajeWhatsAppParaCurso(sec, currentCode);
+                                setMensajeWhatsAppModal({ seccion: sec, codigo: currentCode, texto: msg });
+                              }}
+                              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1.5 p-1 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
+                            >
+                              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Mensaje WhatsApp</span>
+                            </button>
+
+                            {onProbarCodigo && (
+                              <button
+                                type="button"
+                                onClick={() => onProbarCodigo(currentCode)}
+                                className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 p-1 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer"
+                              >
+                                <span>Probar como familia</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* TAB: NOMINA ALUMNOS 2026 */}
+            {activeTab === 'alumnos' && (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-amber-500" />
+                      <span>Nómina Escolar 2026</span>
+                    </h3>
+                    <p className="text-xs text-slate-500">
+                      {ALUMNOS_NOMINA_2026.length} alumnos registrados en {SECCIONES_INICIAL_2026.length} secciones / salas
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      onClick={toggleSelectAllSeccion}
+                      className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 rounded-xl text-xs font-semibold text-slate-700 flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                    >
+                      <CheckSquare className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Chequear filtrados</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const csvContent =
+                          'data:text/csv;charset=utf-8,' +
+                          ['Orden,Apellido,Nombre,Grado,Turno,Division']
+                            .concat(
+                              alumnosFiltradosAdmin.map(
+                                (a, idx) =>
+                                  `${idx + 1},"${a.apellido}","${a.nombre}","${a.grado}","${a.turno}","${a.division}"`
+                              )
+                            )
+                            .join('\n');
+                        const encodedUri = encodeURI(csvContent);
+                        const link = document.createElement('a');
+                        link.setAttribute('href', encodedUri);
+                        link.setAttribute('download', `nomina_alumnos_2026_${filtroSeccionAlumnos}.csv`);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                      }}
+                      className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Descargar CSV</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={busquedaAlumnos}
+                        onChange={(e) => setBusquedaAlumnos(e.target.value)}
+                        placeholder="Buscar por apellido o nombre de alumno..."
+                        className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+                    <div className="sm:w-72">
+                      <select
+                        value={filtroSeccionAlumnos}
+                        onChange={(e) => setFiltroSeccionAlumnos(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-400 font-medium text-slate-700"
+                      >
+                        <option value="todas">Todas las secciones ({ALUMNOS_NOMINA_2026.length} alumnos)</option>
+                        {SECCIONES_INICIAL_2026.map((sec) => (
+                          <option key={sec.id} value={sec.id}>
+                            {sec.nombreCompleto} ({sec.totalAlumnos} alumnos)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Section badges pills */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
+                    <button
+                      onClick={() => setFiltroSeccionAlumnos('todas')}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                        filtroSeccionAlumnos === 'todas'
+                          ? 'bg-amber-400 text-slate-950'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      Todas ({ALUMNOS_NOMINA_2026.length})
+                    </button>
+                    {SECCIONES_INICIAL_2026.map((sec) => (
+                      <button
+                        key={sec.id}
+                        onClick={() => setFiltroSeccionAlumnos(sec.id)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                          filtroSeccionAlumnos === sec.id
+                            ? 'bg-amber-400 text-slate-950 font-bold shadow-xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {sec.nombreCompleto} ({sec.totalAlumnos})
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3 w-10 text-center">✓</th>
+                        <th className="py-2.5 px-3 w-12 text-slate-400">#</th>
+                        <th className="py-2.5 px-4 font-bold text-slate-800">Apellido y Nombre</th>
+                        <th className="py-2.5 px-4">Sala</th>
+                        <th className="py-2.5 px-4">Turno</th>
+                        <th className="py-2.5 px-4">División</th>
+                        <th className="py-2.5 px-4 text-center">Estado Foto</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {alumnosFiltradosAdmin.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="py-8 text-center text-slate-400">
+                            No se encontraron alumnos con los criterios seleccionados.
+                          </td>
+                        </tr>
+                      ) : (
+                        alumnosFiltradosAdmin.map((alu, index) => {
+                          const isChecked = !!checkedAlumnos[alu.id];
+                          return (
+                            <tr
+                              key={alu.id}
+                              onClick={() => toggleCheckAlumno(alu.id)}
+                              className={`cursor-pointer transition-colors ${
+                                isChecked ? 'bg-amber-50/50 hover:bg-amber-50' : 'hover:bg-slate-50'
+                              }`}
+                            >
+                              <td className="py-2.5 px-3 text-center">
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleCheckAlumno(alu.id)}
+                                  className="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 cursor-pointer"
+                                />
+                              </td>
+                              <td className="py-2.5 px-3 text-slate-400 font-mono text-[11px]">
+                                {index + 1}
+                              </td>
+                              <td className="py-2.5 px-4 font-bold text-slate-900">
+                                {alu.apellido}, {alu.nombre}
+                              </td>
+                              <td className="py-2.5 px-4">
+                                <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-medium text-[11px]">
+                                  {alu.grado}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-4">
+                                <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 font-medium text-[11px]">
+                                  {alu.turno}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-4">
+                                <span className="px-2 py-0.5 rounded-md bg-sky-100 text-sky-800 font-medium text-[11px]">
+                                  {alu.division}
+                                </span>
+                              </td>
+                              <td className="py-2.5 px-4 text-center">
+                                {isChecked ? (
+                                  <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                                    <CheckCircle2 className="w-3 h-3" /> Fotografiado
+                                  </span>
+                                ) : (
+                                  <span className="inline-block text-[10px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                    Pendiente
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-500 px-2">
+                  <span>
+                    Mostrando {alumnosFiltradosAdmin.length} de {ALUMNOS_NOMINA_2026.length} alumnos
+                  </span>
+                  <span>
+                    {Object.values(checkedAlumnos).filter(Boolean).length} alumnos marcados como fotografiados
+                  </span>
+                </div>
+              </div>
+            )}
             {activeTab === 'subir' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <form onSubmit={handleUploadSubmit} className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
@@ -563,6 +1034,78 @@ export default function AdminModal({ isOpen, onClose }: AdminModalProps) {
               </div>
             )}
 
+          </div>
+        )}
+
+        {/* WhatsApp Message Preview Modal */}
+        {mensajeWhatsAppModal && (
+          <div
+            onClick={() => setMensajeWhatsAppModal(null)}
+            className="fixed inset-0 z-70 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-4"
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white max-w-lg w-full rounded-3xl overflow-hidden shadow-2xl border border-slate-200 text-left animate-in fade-in zoom-in-95 duration-150"
+            >
+              <div className="p-4 sm:p-5 bg-emerald-800 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-700 flex items-center justify-center text-white">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-white">Comunicado para Grupo de Familias</h3>
+                    <p className="text-[11px] text-emerald-200">{mensajeWhatsAppModal.seccion.nombreCompleto}</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMensajeWhatsAppModal(null)}
+                  className="p-1 rounded-lg hover:bg-emerald-700/60 text-emerald-200 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">
+                    Mensaje preformateado listo para copiar:
+                  </label>
+                  <textarea
+                    readOnly
+                    value={mensajeWhatsAppModal.texto}
+                    rows={10}
+                    className="w-full text-xs font-mono p-3 bg-slate-50 border border-slate-300 rounded-xl leading-relaxed focus:outline-hidden text-slate-800 resize-none"
+                  />
+                </div>
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(mensajeWhatsAppModal.texto);
+                      setCopiadoFeedback('¡Mensaje para WhatsApp copiado al portapapeles!');
+                      setTimeout(() => setCopiadoFeedback(null), 2500);
+                      setMensajeWhatsAppModal(null);
+                    }}
+                    className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+                  >
+                    <Copy className="w-4 h-4" />
+                    <span>Copiar Mensaje Completo</span>
+                  </button>
+
+                  <a
+                    href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsAppModal.texto)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Enviar a WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

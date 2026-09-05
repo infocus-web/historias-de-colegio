@@ -1,4 +1,4 @@
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, useMemo, FormEvent } from 'react';
 import {
   X,
   Search,
@@ -23,15 +23,23 @@ import {
   Clock,
   Truck,
   FileText,
+  Key,
+  Layers,
+  CheckCheck,
+  AlertCircle,
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA, KITS_DISPONIBLES } from '../data/colegiosData';
-import { Colegio, KitProducto, Foto } from '../types';
+import { ALUMNOS_NOMINA_2026, getNombreCompleto } from '../data/alumnosData';
+import { buscarSeccionPorCodigo } from '../data/codigosCursos';
+import WatermarkOverlay from './WatermarkOverlay';
+import { Colegio, KitProducto, Foto, Alumno } from '../types';
 
 interface PortalFamiliasModalProps {
   isOpen: boolean;
   onClose: () => void;
   preselectedColegioId?: string;
   preselectedKitId?: string;
+  preselectedCodigo?: string;
 }
 
 export default function PortalFamiliasModal({
@@ -39,6 +47,7 @@ export default function PortalFamiliasModal({
   onClose,
   preselectedColegioId,
   preselectedKitId,
+  preselectedCodigo,
 }: PortalFamiliasModalProps) {
   // Navigation Steps
   // 1: Colegio y Alumno
@@ -57,11 +66,52 @@ export default function PortalFamiliasModal({
   // Step 1: School & Student Selection
   const [searchColegio, setSearchColegio] = useState('');
   const [selectedColegio, setSelectedColegio] = useState<Colegio | null>(null);
-  const [grado, setGrado] = useState('3° grado');
-  const [division, setDivision] = useState('A');
-  const [turno, setTurno] = useState('Mañana');
-  const [nombreAlumno, setNombreAlumno] = useState('Valentina Rossi');
+  const [grado, setGrado] = useState('');
+  const [division, setDivision] = useState('');
+  const [turno, setTurno] = useState('');
+  const [nombreAlumno, setNombreAlumno] = useState('');
   const [codigoAcceso, setCodigoAcceso] = useState('');
+  const [seccionDetectada, setSeccionDetectada] = useState<any | null>(null);
+  const [codigoValidadoMsg, setCodigoValidadoMsg] = useState<string | null>(null);
+  const [codigoErrorMsg, setCodigoErrorMsg] = useState<string | null>(null);
+  const [showRosterSuggestions, setShowRosterSuggestions] = useState(false);
+  const [showRosterModal, setShowRosterModal] = useState(false);
+  const [rosterFilterSala, setRosterFilterSala] = useState<string>('todas');
+  const [rosterSearchModal, setRosterSearchModal] = useState<string>('');
+
+  const sugerenciasAlumnos = useMemo(() => {
+    if (!nombreAlumno || nombreAlumno.trim().length < 2) return [];
+    const q = nombreAlumno.toLowerCase().trim();
+    return ALUMNOS_NOMINA_2026.filter((a) => {
+      const full = `${a.apellido} ${a.nombre}`.toLowerCase();
+      const inv = `${a.nombre} ${a.apellido}`.toLowerCase();
+      return full.includes(q) || inv.includes(q);
+    }).slice(0, 8);
+  }, [nombreAlumno]);
+
+  const seleccionarAlumnoDeNomina = (alumno: Alumno) => {
+    setNombreAlumno(getNombreCompleto(alumno));
+    if (alumno.grado) setGrado(alumno.grado);
+    if (alumno.turno) setTurno(alumno.turno);
+    if (alumno.division) setDivision(alumno.division);
+    setShowRosterSuggestions(false);
+    setShowRosterModal(false);
+  };
+
+  const alumnosParaModal = useMemo(() => {
+    return ALUMNOS_NOMINA_2026.filter((a) => {
+      const matchSala =
+        rosterFilterSala === 'todas' ||
+        a.grado.toLowerCase().includes(rosterFilterSala.toLowerCase());
+      const q = rosterSearchModal.toLowerCase().trim();
+      const matchQuery =
+        !q ||
+        `${a.apellido} ${a.nombre}`.toLowerCase().includes(q) ||
+        `${a.nombre} ${a.apellido}`.toLowerCase().includes(q) ||
+        a.division.toLowerCase().includes(q);
+      return matchSala && matchQuery;
+    });
+  }, [rosterFilterSala, rosterSearchModal]);
 
   // Step 2: Gallery
   const [categoriaActiva, setCategoriaActiva] = useState<'individual' | 'grupal' | 'docente' | 'patio'>('individual');
@@ -92,10 +142,24 @@ export default function PortalFamiliasModal({
     if (preselectedColegioId) {
       const col = COLEGIOS_EJEMPLO.find((c) => c.id === preselectedColegioId);
       if (col) setSelectedColegio(col);
-    } else if (!selectedColegio) {
+    } else if (!selectedColegio && COLEGIOS_EJEMPLO.length > 0) {
       setSelectedColegio(COLEGIOS_EJEMPLO[0]);
     }
   }, [preselectedColegioId]);
+
+  useEffect(() => {
+    if (selectedColegio) {
+      if (!grado || !selectedColegio.grados.includes(grado)) {
+        setGrado(selectedColegio.grados[0] || '');
+      }
+      if (!division || !selectedColegio.divisiones.includes(division)) {
+        setDivision(selectedColegio.divisiones[0] || '');
+      }
+      if (!turno || !selectedColegio.turnos.includes(turno)) {
+        setTurno(selectedColegio.turnos[0] || '');
+      }
+    }
+  }, [selectedColegio]);
 
   useEffect(() => {
     if (preselectedKitId) {
@@ -103,6 +167,53 @@ export default function PortalFamiliasModal({
       if (k) setSelectedKit(k);
     }
   }, [preselectedKitId]);
+
+  // Function to validate and bind course code or school code
+  const validarCodigoIngresado = (codigoInput: string) => {
+    const clean = codigoInput.trim().toUpperCase();
+    if (!clean) {
+      setCodigoErrorMsg('Por favor ingresá un código para validar.');
+      setCodigoValidadoMsg(null);
+      return false;
+    }
+
+    // 1. Search for course section by nemotecnico or PIN
+    const match = buscarSeccionPorCodigo(clean);
+    if (match) {
+      const colInicial = COLEGIOS_EJEMPLO.find((c) => c.id === 'col-inicial-2026') || COLEGIOS_EJEMPLO[0];
+      setSelectedColegio(colInicial);
+      setGrado(match.seccion.sala);
+      setTurno(match.seccion.turno);
+      setDivision(match.seccion.division);
+      setSeccionDetectada(match.seccion);
+      setCodigoValidadoMsg(`¡Código reconocido! Curso: ${match.seccion.nombreCompleto}`);
+      setCodigoErrorMsg(null);
+      return true;
+    }
+
+    // 2. Search for general school access code (e.g. TOURS26)
+    const colFound = COLEGIOS_EJEMPLO.find(
+      (c) => c.codigoAcceso.toUpperCase() === clean
+    );
+    if (colFound) {
+      setSelectedColegio(colFound);
+      setSeccionDetectada(null);
+      setCodigoValidadoMsg(`¡Código de institución reconocido: ${colFound.nombre}!`);
+      setCodigoErrorMsg(null);
+      return true;
+    }
+
+    setCodigoErrorMsg(`Código "${codigoInput}" no encontrado. Verificá si está bien escrito o seleccioná tu curso abajo.`);
+    setCodigoValidadoMsg(null);
+    return false;
+  };
+
+  useEffect(() => {
+    if (preselectedCodigo) {
+      setCodigoAcceso(preselectedCodigo);
+      validarCodigoIngresado(preselectedCodigo);
+    }
+  }, [preselectedCodigo]);
 
   if (!isOpen) return null;
 
@@ -124,14 +235,9 @@ export default function PortalFamiliasModal({
   // Handlers
   const handleIngresarCodigo = () => {
     if (!codigoAcceso.trim()) return;
-    const colFound = COLEGIOS_EJEMPLO.find(
-      (c) => c.codigoAcceso.toLowerCase() === codigoAcceso.trim().toLowerCase()
-    );
-    if (colFound) {
-      setSelectedColegio(colFound);
+    const ok = validarCodigoIngresado(codigoAcceso);
+    if (ok && nombreAlumno.trim()) {
       setStep(2);
-    } else {
-      alert('Código no encontrado. Podés usar "TOURS26" o elegir el colegio de la lista.');
     }
   };
 
@@ -515,32 +621,103 @@ export default function PortalFamiliasModal({
                 </p>
               </div>
 
-              {/* Quick Code Access Card */}
-              <div className="bg-amber-50 rounded-2xl p-4 sm:p-5 border border-amber-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-left">
-                  <p className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
-                    <Sparkles className="w-4 h-4 text-amber-600" />
-                    ¿Recibiste un código en el comunicado escolar?
-                  </p>
-                  <p className="text-xs text-amber-700">
-                    Ingresalo aquí para ir directo a la galería (Ejemplo: <strong className="font-mono">TOURS26</strong> o <strong className="font-mono">DEMO2026</strong>).
-                  </p>
+              {/* Hero Course Code Access Card */}
+              <div className="bg-linear-to-br from-amber-500/10 via-amber-50 to-white rounded-2xl p-5 sm:p-6 border-2 border-amber-300 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                  <div className="text-left">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase tracking-wider mb-1">
+                      <Key className="w-3 h-3" />
+                      Acceso para Familias
+                    </span>
+                    <h4 className="text-base sm:text-lg font-extrabold text-slate-900 font-['Outfit']">
+                      Ingresá el código de tu curso o institución
+                    </h4>
+                    <p className="text-xs text-slate-600 mt-0.5">
+                      Ingresá el código provisto por la escuela o fotógrafo para cargar automáticamente el curso, turno y división.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <input
+                      type="text"
+                      value={codigoAcceso}
+                      onChange={(e) => {
+                        setCodigoAcceso(e.target.value);
+                        setCodigoErrorMsg(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          handleIngresarCodigo();
+                        }
+                      }}
+                      placeholder="Ej: SALA3TM o TOURS26"
+                      className="px-3.5 py-2.5 text-xs sm:text-sm uppercase font-mono font-bold tracking-wider bg-white border-2 border-amber-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500 w-full sm:w-48 shadow-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleIngresarCodigo}
+                      className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-amber-300 hover:text-white font-bold text-xs rounded-xl shadow-sm cursor-pointer shrink-0 transition-colors flex items-center gap-1.5"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Validar</span>
+                    </button>
+                  </div>
                 </div>
-                <div className="flex w-full sm:w-auto gap-2">
-                  <input
-                    type="text"
-                    value={codigoAcceso}
-                    onChange={(e) => setCodigoAcceso(e.target.value)}
-                    placeholder="Código de acceso..."
-                    className="px-3 py-2 text-xs uppercase font-mono bg-white border border-amber-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-500 w-full sm:w-36"
-                  />
-                  <button
-                    onClick={handleIngresarCodigo}
-                    className="px-3.5 py-2 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-lg shadow-xs cursor-pointer shrink-0"
-                  >
-                    Ingresar
-                  </button>
+
+                {/* Quick Sample Code Chips */}
+                <div className="pt-1 flex flex-wrap items-center gap-1.5 text-left border-t border-amber-200/60">
+                  <span className="text-[11px] font-semibold text-amber-900 mr-1">
+                    Códigos de prueba rápidos:
+                  </span>
+                  {[
+                    { code: 'SALA3TM', desc: 'Sala 3 TM' },
+                    { code: 'SALA3TT', desc: 'Sala 3 TT' },
+                    { code: 'SALA4A', desc: 'Sala 4 A (TT)' },
+                    { code: 'SALA5BTT', desc: 'Sala 5 B (TT)' },
+                    { code: 'TOURS26', desc: 'San Martín de Tours' },
+                  ].map((item) => (
+                    <button
+                      key={item.code}
+                      type="button"
+                      onClick={() => {
+                        setCodigoAcceso(item.code);
+                        validarCodigoIngresado(item.code);
+                      }}
+                      className="px-2.5 py-1 rounded-lg bg-white hover:bg-amber-100/80 text-slate-800 hover:text-slate-950 text-[11px] font-mono font-bold border border-amber-300 shadow-2xs transition-all cursor-pointer flex items-center gap-1"
+                    >
+                      <span className="text-amber-700">{item.code}</span>
+                      <span className="text-[10px] text-slate-500 font-sans font-normal">({item.desc})</span>
+                    </button>
+                  ))}
                 </div>
+
+                {/* Validation Success Feedback Banner */}
+                {codigoValidadoMsg && (
+                  <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl text-left flex items-start justify-between gap-3 animate-in fade-in duration-200">
+                    <div className="flex items-start gap-2.5">
+                      <CheckCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-xs font-bold text-emerald-950">
+                          {codigoValidadoMsg}
+                        </p>
+                        <p className="text-[11px] text-emerald-800 mt-0.5">
+                          Asignado: {grado} · División {division} · Turno {turno}. Podés confirmar o cambiar los datos a continuación y seleccionar a tu hijo/a.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-2 py-0.5 bg-emerald-200 text-emerald-900 text-[10px] font-extrabold rounded-md uppercase">
+                      Activo
+                    </span>
+                  </div>
+                )}
+
+                {/* Error Feedback */}
+                {codigoErrorMsg && (
+                  <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-left flex items-center gap-2 text-rose-800 text-xs animate-in fade-in duration-200">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                    <span>{codigoErrorMsg}</span>
+                  </div>
+                )}
               </div>
 
               {/* School Search List */}
@@ -549,12 +726,6 @@ export default function PortalFamiliasModal({
                   <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     O elegí tu colegio de la lista:
                   </label>
-                  <button
-                    onClick={handleCargarDemo}
-                    className="text-xs text-amber-700 hover:text-amber-800 font-bold underline cursor-pointer"
-                  >
-                    Probar con datos demo al instante
-                  </button>
                 </div>
 
                 <div className="relative">
@@ -599,23 +770,95 @@ export default function PortalFamiliasModal({
               {/* Student details form */}
               {selectedColegio && (
                 <div className="bg-white p-5 rounded-2xl border border-slate-200 space-y-4 text-left shadow-xs animate-in fade-in duration-150">
-                  <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                    <User className="w-4 h-4 text-amber-600" />
-                    <span>Datos del alumno/a en {selectedColegio.nombre}:</span>
-                  </h4>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                      <User className="w-4 h-4 text-amber-600" />
+                      <span>Datos del alumno/a en {selectedColegio.nombre}:</span>
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => setShowRosterModal(true)}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Ver nómina completa ({ALUMNOS_NOMINA_2026.length} alumnos)</span>
+                    </button>
+                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-                    <div className="sm:col-span-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 relative">
+                    <div className="sm:col-span-2 relative">
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                         Nombre y Apellido del alumno/a
                       </label>
                       <input
                         type="text"
                         value={nombreAlumno}
-                        onChange={(e) => setNombreAlumno(e.target.value)}
-                        placeholder="Ej: Mateo Rodríguez"
+                        onChange={(e) => {
+                          setNombreAlumno(e.target.value);
+                          setShowRosterSuggestions(true);
+                        }}
+                        onFocus={() => setShowRosterSuggestions(true)}
+                        placeholder="Escribí apellido o nombre..."
                         className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-400"
                       />
+
+                      {/* Autocomplete Dropdown */}
+                      {showRosterSuggestions && sugerenciasAlumnos.length > 0 && (
+                        <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-amber-200 rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto">
+                          <div className="px-3 py-1.5 bg-amber-50 text-[10px] font-bold text-amber-900 border-b border-amber-100 flex items-center justify-between">
+                            <span>Sugerencias de la nómina oficial:</span>
+                            <button
+                              type="button"
+                              onClick={() => setShowRosterSuggestions(false)}
+                              className="text-slate-400 hover:text-slate-700"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                          {sugerenciasAlumnos.map((alu) => (
+                            <button
+                              key={alu.id}
+                              type="button"
+                              onClick={() => seleccionarAlumnoDeNomina(alu)}
+                              className="w-full text-left px-3 py-2 text-xs hover:bg-amber-50/80 border-b border-slate-100 last:border-b-0 flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                            >
+                              <div>
+                                <span className="font-bold text-slate-900">
+                                  {alu.apellido}, {alu.nombre}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                                  {alu.grado}
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">
+                                  {alu.turno}
+                                </span>
+                                <span className="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 font-medium">
+                                  {alu.division}
+                                </span>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="text-[11px] font-semibold text-slate-600 block mb-1">
+                        Turno
+                      </label>
+                      <select
+                        value={turno}
+                        onChange={(e) => setTurno(e.target.value)}
+                        className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                      >
+                        {selectedColegio.turnos.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </select>
                     </div>
 
                     <div>
@@ -711,17 +954,114 @@ export default function PortalFamiliasModal({
                 </div>
               </div>
 
-              {/* Instructions banner */}
-              <div className="bg-sky-50 border border-sky-200 rounded-xl p-3 text-xs text-sky-900 flex items-center justify-between">
-                <span className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-sky-600 shrink-0" />
-                  <span>
-                    Hacé clic en tu toma favorita para seleccionarla en tu kit. Podés previsualizarla en grande tocando en "Ampliar".
+              {/* 3 Fotos Incluidas Top Panel */}
+              <div className="bg-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-md border border-slate-800">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-extrabold uppercase">
+                        Pack Oficial Escolar
+                      </span>
+                      <h4 className="text-sm font-bold text-white">
+                        Tus 3 Fotos Incluidas en el Paquete
+                      </h4>
+                    </div>
+                    <p className="text-xs text-slate-300 mt-0.5 text-left">
+                      Elegí las 3 tomas que integran tu recuerdo escolar: 1 grupal, 1 individual y 1 con la seño.
+                    </p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold shrink-0 self-start sm:self-auto flex items-center gap-1.5">
+                    <CheckCheck className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>3 de 3 fotos seleccionadas</span>
                   </span>
-                </span>
-                <span className="text-[11px] font-bold text-sky-700 shrink-0 hidden md:inline">
-                  Toma elegida: {FOTOS_MUESTRA.find((f) => f.id === fotoSeleccionadaIndividual)?.titulo.split(' - ')[1]}
-                </span>
+                </div>
+
+                {/* 3 Slots */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1 text-left">
+                  {/* Slot 1: Grupal */}
+                  <div
+                    onClick={() => setCategoriaActiva('grupal')}
+                    className={`bg-slate-800/80 hover:bg-slate-800 rounded-xl p-2.5 flex items-center gap-3 transition-all cursor-pointer group border ${
+                      categoriaActiva === 'grupal' ? 'border-amber-400 ring-1 ring-amber-400/40' : 'border-slate-700 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="w-13 h-13 rounded-lg overflow-hidden bg-slate-950 shrink-0 relative border border-slate-700">
+                      <img
+                        src={FOTOS_MUESTRA.find((f) => f.id === fotoSeleccionadaGrupal)?.thumbnail || FOTOS_MUESTRA[3].thumbnail}
+                        alt="Foto grupal"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-amber-400 block uppercase tracking-wider">
+                        Foto 1 de 3 (Grupal 20x30)
+                      </span>
+                      <p className="text-xs font-bold text-white truncate group-hover:text-amber-300">
+                        {FOTOS_MUESTRA.find((f) => f.id === fotoSeleccionadaGrupal)?.titulo.split(' - ')[0] || 'Foto Grupal'}
+                      </p>
+                      <span className="text-[10px] text-slate-400">Clic para cambiar</span>
+                    </div>
+                  </div>
+
+                  {/* Slot 2: Retrato Individual */}
+                  <div
+                    onClick={() => setCategoriaActiva('individual')}
+                    className={`bg-slate-800/80 hover:bg-slate-800 rounded-xl p-2.5 flex items-center gap-3 transition-all cursor-pointer group border ${
+                      categoriaActiva === 'individual' ? 'border-amber-400 ring-1 ring-amber-400/40' : 'border-slate-700 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="w-13 h-13 rounded-lg overflow-hidden bg-slate-950 shrink-0 relative border border-slate-700">
+                      <img
+                        src={FOTOS_MUESTRA.find((f) => f.id === fotoSeleccionadaIndividual)?.thumbnail || FOTOS_MUESTRA[0].thumbnail}
+                        alt="Retrato individual"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-amber-400 block uppercase tracking-wider">
+                        Foto 2 de 3 (Retrato 15x21)
+                      </span>
+                      <p className="text-xs font-bold text-white truncate group-hover:text-amber-300">
+                        {FOTOS_MUESTRA.find((f) => f.id === fotoSeleccionadaIndividual)?.titulo.split(' - ')[1] || 'Retrato Individual'}
+                      </p>
+                      <span className="text-[10px] text-slate-400">Clic para cambiar toma</span>
+                    </div>
+                  </div>
+
+                  {/* Slot 3: Con Docente */}
+                  <div
+                    onClick={() => setCategoriaActiva('docente')}
+                    className={`bg-slate-800/80 hover:bg-slate-800 rounded-xl p-2.5 flex items-center gap-3 transition-all cursor-pointer group border ${
+                      categoriaActiva === 'docente' ? 'border-amber-400 ring-1 ring-amber-400/40' : 'border-slate-700 hover:border-slate-600'
+                    }`}
+                  >
+                    <div className="w-13 h-13 rounded-lg overflow-hidden bg-slate-950 shrink-0 relative border border-slate-700">
+                      <img
+                        src={FOTOS_MUESTRA.find((f) => f.id === fotoSeleccionadaDocente)?.thumbnail || FOTOS_MUESTRA[5].thumbnail}
+                        alt="Con docente"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
+                        <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
+                      </div>
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-[10px] font-bold text-amber-400 block uppercase tracking-wider">
+                        Foto 3 de 3 (Con Seño 15x21)
+                      </span>
+                      <p className="text-xs font-bold text-white truncate group-hover:text-amber-300">
+                        {FOTOS_MUESTRA.find((f) => f.id === fotoSeleccionadaDocente)?.titulo || 'Con la Seño'}
+                      </p>
+                      <span className="text-[10px] text-slate-400">Clic para cambiar</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Category tabs */}
@@ -777,29 +1117,23 @@ export default function PortalFamiliasModal({
                           className="w-full h-full object-cover object-center"
                         />
 
-                        {/* Watermark simulator */}
-                        {showWatermark && (
-                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
-                            <div className="w-[180%] h-[180%] flex flex-col justify-around rotate-[-25deg] select-none opacity-40">
-                              {[...Array(6)].map((_, idx) => (
-                                <div
-                                  key={idx}
-                                  className="flex justify-around text-white font-black tracking-widest text-xs drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap"
-                                >
-                                  <span>INFOCUS SCHOOLS · MUESTRA</span>
-                                  <span>INFOCUS SCHOOLS · MUESTRA</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        {/* Watermark overlay matching exact sample */}
+                        <WatermarkOverlay visible={showWatermark} />
 
                         {/* Status badge */}
                         <div className="absolute top-2.5 left-2.5 flex gap-1.5">
                           {isSelected ? (
                             <span className="px-2.5 py-1 rounded-md bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1 shadow-sm">
                               <Check className="w-3 h-3 stroke-[3]" />
-                              <span>Elegida para tu Kit</span>
+                              <span>
+                                {foto.categoria === 'grupal'
+                                  ? '✓ Foto 1 de 3 (Grupal)'
+                                  : foto.categoria === 'individual'
+                                  ? '✓ Foto 2 de 3 (Individual)'
+                                  : foto.categoria === 'docente'
+                                  ? '✓ Foto 3 de 3 (Con Seño)'
+                                  : '✓ Foto seleccionada'}
+                              </span>
                             </span>
                           ) : (
                             <span className="px-2 py-0.5 rounded-md bg-slate-900/70 backdrop-blur-xs text-white text-[10px] font-medium">
@@ -813,7 +1147,7 @@ export default function PortalFamiliasModal({
                           type="button"
                           onClick={() => setModalFotoPreview(foto)}
                           className="absolute bottom-2.5 right-2.5 p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-800 text-xs shadow-md transition-colors cursor-pointer"
-                          title="Ampliar foto"
+                          title="Ampliar foto con marca de agua"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
@@ -933,12 +1267,6 @@ export default function PortalFamiliasModal({
                             </span>
                             <span className="text-xs text-slate-500">ARS</span>
                           </div>
-                          {kit.cooperadoraAporte && (
-                            <div className="mt-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200/60 text-[10px] font-bold">
-                              <span>🎓 Aporte Cooperadora:</span>
-                              <span className="font-extrabold">${kit.cooperadoraAporte.toLocaleString('es-AR')}</span>
-                            </div>
-                          )}
                         </div>
 
                         <ul className="space-y-2 mb-6">
@@ -1410,21 +1738,8 @@ export default function PortalFamiliasModal({
                 className="w-full h-full object-contain"
               />
 
-              {showWatermark && (
-                <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden">
-                  <div className="w-[180%] h-[180%] flex flex-col justify-around rotate-[-25deg] select-none opacity-40">
-                    {[...Array(6)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="flex justify-around text-white font-black tracking-widest text-xs drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] whitespace-nowrap"
-                      >
-                        <span>INFOCUS SCHOOLS · MUESTRA</span>
-                        <span>INFOCUS SCHOOLS · MUESTRA</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* Watermark overlay matching exact sample */}
+              <WatermarkOverlay visible={showWatermark} />
             </div>
 
             <div className="p-3 flex items-center justify-between">
@@ -1437,6 +1752,124 @@ export default function PortalFamiliasModal({
                 className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg font-semibold"
               >
                 Cerrar vista
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Full Roster Selector */}
+      {showRosterModal && (
+        <div
+          onClick={() => setShowRosterModal(false)}
+          className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-150 text-left"
+          >
+            {/* Header */}
+            <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold">Nómina Oficial de Alumnos</h3>
+                  <p className="text-[11px] text-slate-400">
+                    Seleccioná a tu hijo/a para autocompletar sala, turno y división
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowRosterModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Filter and Search Bar */}
+            <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-3">
+              <div className="relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={rosterSearchModal}
+                  onChange={(e) => setRosterSearchModal(e.target.value)}
+                  placeholder="Buscar alumno/a por apellido o nombre..."
+                  className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                />
+              </div>
+
+              {/* Sala Tabs */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                {[
+                  { id: 'todas', label: 'Todas las Salas' },
+                  { id: 'Sala 3', label: 'Sala 3 años' },
+                  { id: 'Sala 4', label: 'Sala 4 años' },
+                  { id: 'Sala 5', label: 'Sala 5 años' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setRosterFilterSala(tab.id)}
+                    className={`px-3 py-1 text-[11px] rounded-lg font-bold transition-all cursor-pointer ${
+                      rosterFilterSala === tab.id
+                        ? 'bg-amber-400 text-slate-950 shadow-xs'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+                <span className="text-[11px] text-slate-400 ml-auto">
+                  {alumnosParaModal.length} alumnos encontrados
+                </span>
+              </div>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1.5 divide-y divide-slate-100">
+              {alumnosParaModal.length === 0 ? (
+                <div className="text-center py-10 text-slate-400 text-xs">
+                  No se encontraron alumnos con los filtros actuales.
+                </div>
+              ) : (
+                alumnosParaModal.map((alumno) => (
+                  <button
+                    key={alumno.id}
+                    onClick={() => seleccionarAlumnoDeNomina(alumno)}
+                    className="w-full text-left p-2.5 rounded-xl hover:bg-amber-50/70 border border-transparent hover:border-amber-200 flex items-center justify-between gap-3 transition-colors group cursor-pointer"
+                  >
+                    <div>
+                      <p className="text-xs font-bold text-slate-900 group-hover:text-amber-900">
+                        {alumno.apellido}, {alumno.nombre}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">
+                        {alumno.grado}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-semibold">
+                        {alumno.turno}
+                      </span>
+                      <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-semibold">
+                        {alumno.division}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
+              <span>Hacé clic en el nombre de tu alumno/a para seleccionarlo.</span>
+              <button
+                onClick={() => setShowRosterModal(false)}
+                className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-semibold text-xs transition-colors"
+              >
+                Cerrar
               </button>
             </div>
           </div>

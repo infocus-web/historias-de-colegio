@@ -20,7 +20,6 @@ export interface KitProducto {
   precio: number;
   precioOriginal?: number;
   popular?: boolean;
-  cooperadoraAporte?: number;
   incluye: string[];
   icono: string;
   fotosPermitidas: {
@@ -63,6 +62,23 @@ export interface Pedido {
   estadoPago: 'pendiente' | 'aprobado';
   montoTotal: number;
   fecha: string;
+}
+
+export interface Alumno {
+  id: string;
+  nombre: string;
+  apellido?: string;
+  colegioId?: string;
+  colegio?: string;
+  seccionId?: string;
+  grado: string;
+  division: string;
+  turno?: string;
+  codigoAcceso?: string;
+  tutorNombre?: string;
+  tutorEmail?: string;
+  tutorTelefono?: string;
+  estado?: 'pendiente' | 'pedido_confirmado' | 'entregado';
 }
 
 export interface SolicitudColegio {

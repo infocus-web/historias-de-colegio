@@ -1,14 +1,13 @@
 import { useState } from 'react';
-import { Camera, Search, Menu, X, PhoneCall, Sparkles, GraduationCap, Lock } from 'lucide-react';
+import { Camera, Search, Menu, X, PhoneCall, Lock, Sparkles } from 'lucide-react';
 
 interface HeaderProps {
   onOpenFamilias: (colegioId?: string) => void;
-  onOpenInstituciones: () => void;
   onScrollTo: (id: string) => void;
   onOpenAdmin?: () => void;
 }
 
-export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo, onOpenAdmin }: HeaderProps) {
+export default function Header({ onOpenFamilias, onScrollTo, onOpenAdmin }: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavClick = (id: string) => {
@@ -23,11 +22,11 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span>Temporada Escolar 2026 activa en CABA, Zona Norte, Zona Sur y Oeste</span>
+            <span>Portal de Familias · Ciclo Escolar 2026 activo</span>
           </div>
           <div className="flex items-center gap-4 text-slate-300">
             <span className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer" onClick={() => onScrollTo('cobertura')}>
-              <span className="text-amber-400 font-medium">0 Sobres · 0 Efectivo en la escuela</span>
+              <span className="text-amber-400 font-medium">0 Sobres · 100% Digital y Seguro</span>
             </span>
             <span className="text-slate-600">|</span>
             {onOpenAdmin && (
@@ -43,13 +42,13 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
               </>
             )}
             <a
-              href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta"
+              href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors"
             >
               <PhoneCall className="w-3.5 h-3.5" />
-              <span>Atención WhatsApp</span>
+              <span>Atención Familias por WhatsApp</span>
             </a>
           </div>
         </div>
@@ -73,31 +72,17 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
                   INFOCUS<span className="text-amber-600">SCHOOLS</span>
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                  Arg
+                  Familias
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 -mt-0.5 font-medium tracking-wide">
-                Fotografía escolar 100% digital · by InFocus
+                Portal de fotos escolares para padres y familias
               </p>
             </div>
           </div>
 
           {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600">
-            <button
-              id="nav-colegios"
-              onClick={() => handleNavClick('instituciones')}
-              className="hover:text-slate-900 transition-colors cursor-pointer py-1"
-            >
-              Para Colegios
-            </button>
-            <button
-              id="nav-familias"
-              onClick={() => handleNavClick('familias')}
-              className="hover:text-slate-900 transition-colors cursor-pointer py-1"
-            >
-              Para Familias
-            </button>
+          <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
             <button
               id="nav-proceso"
               onClick={() => handleNavClick('proceso')}
@@ -110,42 +95,33 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
               onClick={() => handleNavClick('muestrario')}
               className="hover:text-slate-900 transition-colors cursor-pointer py-1"
             >
-              Kits y Productos
+              Kits y Formatos
             </button>
             <button
               id="nav-faq"
               onClick={() => handleNavClick('faq')}
               className="hover:text-slate-900 transition-colors cursor-pointer py-1"
             >
-              Preguntas
+              Preguntas Frecuentes
             </button>
             <button
               id="nav-contacto"
               onClick={() => handleNavClick('contacto')}
               className="hover:text-slate-900 transition-colors cursor-pointer py-1"
             >
-              Contacto
+              Ayuda y Contacto
             </button>
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden lg:flex items-center gap-3">
-            <button
-              id="btn-pedir-propuesta"
-              onClick={onOpenInstituciones}
-              className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <GraduationCap className="w-4 h-4 text-slate-600" />
-              <span>Propuesta para Colegios</span>
-            </button>
-
+          <div className="hidden sm:flex items-center gap-3">
             <button
               id="btn-acceso-familias-header"
               onClick={() => onOpenFamilias()}
-              className="px-4 py-2 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-lg shadow-sm shadow-amber-400/30 transition-all flex items-center gap-2 cursor-pointer active:scale-98"
+              className="px-5 py-2.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-sm shadow-amber-400/30 transition-all flex items-center gap-2 cursor-pointer active:scale-98"
             >
               <Search className="w-4 h-4" />
-              <span>Acceso Familias</span>
+              <span>Acceder a las Fotos</span>
             </button>
           </div>
 
@@ -157,7 +133,7 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
               className="px-3 py-1.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-lg shadow-xs flex items-center gap-1.5"
             >
               <Search className="w-3.5 h-3.5" />
-              <span>Fotos</span>
+              <span>Ver Fotos</span>
             </button>
             <button
               id="btn-toggle-menu"
@@ -176,18 +152,6 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
         <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-3 pb-6 space-y-3 animate-in slide-in-from-top-2 duration-200">
           <nav className="flex flex-col space-y-2">
             <button
-              onClick={() => handleNavClick('instituciones')}
-              className="text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
-            >
-              Para Colegios
-            </button>
-            <button
-              onClick={() => handleNavClick('familias')}
-              className="text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
-            >
-              Para Familias
-            </button>
-            <button
               onClick={() => handleNavClick('proceso')}
               className="text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
             >
@@ -197,7 +161,7 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
               onClick={() => handleNavClick('muestrario')}
               className="text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
             >
-              Kits y Productos
+              Kits y Formatos
             </button>
             <button
               onClick={() => handleNavClick('faq')}
@@ -209,7 +173,7 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
               onClick={() => handleNavClick('contacto')}
               className="text-left px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 rounded-md"
             >
-              Contacto
+              Ayuda y Contacto
             </button>
           </nav>
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
@@ -221,17 +185,7 @@ export default function Header({ onOpenFamilias, onOpenInstituciones, onScrollTo
               className="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm rounded-lg text-center flex items-center justify-center gap-2"
             >
               <Search className="w-4 h-4" />
-              <span>Acceso Familias (Ver fotos)</span>
-            </button>
-            <button
-              onClick={() => {
-                setMobileMenuOpen(false);
-                onOpenInstituciones();
-              }}
-              className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-sm rounded-lg text-center flex items-center justify-center gap-2"
-            >
-              <GraduationCap className="w-4 h-4 text-slate-600" />
-              <span>Solicitar Propuesta Institucional</span>
+              <span>Acceder a las Fotos de mis Hijos</span>
             </button>
             {onOpenAdmin && (
               <button

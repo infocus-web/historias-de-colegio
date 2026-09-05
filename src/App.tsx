@@ -2,14 +2,12 @@ import { useState } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
 import TrustStats from './components/TrustStats';
-import InstitucionesSection from './components/InstitucionesSection';
 import ProcesoSection from './components/ProcesoSection';
 import MuestrarioSection from './components/MuestrarioSection';
 import FaqSection from './components/FaqSection';
 import ContactoSection from './components/ContactoSection';
 import Footer from './components/Footer';
 import PortalFamiliasModal from './components/PortalFamiliasModal';
-import CotizadorInstitucionalModal from './components/CotizadorInstitucionalModal';
 import WhatsAppFloating from './components/WhatsAppFloating';
 import AdminModal from './components/AdminModal';
 
@@ -17,11 +15,12 @@ export default function App() {
   const [familiasModalOpen, setFamiliasModalOpen] = useState(false);
   const [selectedColegioId, setSelectedColegioId] = useState<string | undefined>(undefined);
   const [selectedKitId, setSelectedKitId] = useState<string | undefined>(undefined);
-  const [institucionesModalOpen, setInstitucionesModalOpen] = useState(false);
+  const [selectedCodigo, setSelectedCodigo] = useState<string | undefined>(undefined);
   const [adminModalOpen, setAdminModalOpen] = useState(false);
 
-  const handleOpenFamilias = (colegioId?: string) => {
+  const handleOpenFamilias = (colegioId?: string, codigo?: string) => {
     setSelectedColegioId(colegioId);
+    setSelectedCodigo(codigo);
     setFamiliasModalOpen(true);
   };
 
@@ -42,7 +41,6 @@ export default function App() {
       {/* Navigation Header */}
       <Header
         onOpenFamilias={handleOpenFamilias}
-        onOpenInstituciones={() => setInstitucionesModalOpen(true)}
         onScrollTo={handleScrollTo}
         onOpenAdmin={() => setAdminModalOpen(true)}
       />
@@ -52,25 +50,20 @@ export default function App() {
         {/* Hero with school search & sample watermark viewer */}
         <Hero
           onOpenFamilias={handleOpenFamilias}
-          onOpenInstituciones={() => setInstitucionesModalOpen(true)}
         />
 
         {/* Credentials & Trust Metrics */}
         <TrustStats />
 
-        {/* For Schools, Principals & Cooperadoras */}
-        <InstitucionesSection onOpenSolicitud={() => setInstitucionesModalOpen(true)} />
-
         {/* How it Works / 5-Step Process */}
         <ProcesoSection
           onOpenFamilias={() => handleOpenFamilias('col-5')}
-          onOpenInstituciones={() => setInstitucionesModalOpen(true)}
         />
 
         {/* Physical Products, Prints, Watermark Showcase & Pricing Kits */}
         <MuestrarioSection onSelectKit={handleSelectKit} />
 
-        {/* FAQ with Familias / Colegios tabs */}
+        {/* FAQ with Familias questions */}
         <FaqSection />
 
         {/* Contact Form & Coverage Zones */}
@@ -80,7 +73,6 @@ export default function App() {
       {/* Footer */}
       <Footer
         onOpenFamilias={() => handleOpenFamilias()}
-        onOpenInstituciones={() => setInstitucionesModalOpen(true)}
         onScrollTo={handleScrollTo}
         onOpenAdmin={() => setAdminModalOpen(true)}
       />
@@ -94,18 +86,17 @@ export default function App() {
         onClose={() => setFamiliasModalOpen(false)}
         preselectedColegioId={selectedColegioId}
         preselectedKitId={selectedKitId}
-      />
-
-      {/* Institutional Quote / Date Request Modal */}
-      <CotizadorInstitucionalModal
-        isOpen={institucionesModalOpen}
-        onClose={() => setInstitucionesModalOpen(false)}
+        preselectedCodigo={selectedCodigo}
       />
 
       {/* Photographer Admin Panel Modal */}
       <AdminModal
         isOpen={adminModalOpen}
         onClose={() => setAdminModalOpen(false)}
+        onProbarCodigo={(cod) => {
+          setAdminModalOpen(false);
+          handleOpenFamilias('col-inicial-2026', cod);
+        }}
       />
     </div>
   );

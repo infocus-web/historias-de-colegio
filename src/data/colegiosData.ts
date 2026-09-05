@@ -8,16 +8,14 @@ export const KITS_DISPONIBLES: KitProducto[] = [
     tagline: 'Foto grupal 20x30cm + 2 fotos 15x21cm + carpeta exclusiva y descarga HD de regalo',
     precio: 30000,
     popular: true,
-    cooperadoraAporte: 6000,
     icono: 'Camera',
     incluye: [
       '1 fotografía grupal en formato ampliado 20x30cm',
       '2 fotografías 15x21cm (individual y con docente)',
       '1 carpeta de presentación con diseño exclusivo',
-      '🎁 Descarga en alta resolución (HD) de regalo',
+      '🎁 Descarga en alta resolución (HD) de regalo incluida',
       'Acceso directo por link + código QR y copia por email',
-      'Entrega en sobre cerrado individual en el colegio',
-      '🎓 Aporte de $6.000 (20%) para la cooperadora del colegio',
+      'Entrega en sobre cerrado individual rotulado por grado y división',
     ],
     fotosPermitidas: {
       individuales: 1,
@@ -32,15 +30,13 @@ export const KITS_DISPONIBLES: KitProducto[] = [
     tagline: 'Mismas 3 fotos seleccionadas en máxima resolución, sin producto físico',
     precio: 15000,
     popular: false,
-    cooperadoraAporte: 3000,
     icono: 'Sparkles',
     incluye: [
       '1 fotografía grupal + 2 fotos (individual y con docente)',
       'Todas en alta resolución (HD), sin marca de agua',
-      'Acceso inmediato desde el celular vía link + QR',
-      'Copia automática enviada por email como respaldo',
-      'Pueden sumar el kit impreso después, si lo prefieren',
-      '🎓 Aporte de $3.000 (20%) para la cooperadora del colegio',
+      'Acceso y descarga inmediata desde el celular vía link + QR',
+      'Copia automática enviada por email como respaldo permanente',
+      'Libre de costos de envío o impresión',
     ],
     fotosPermitidas: {
       individuales: 1,
@@ -55,14 +51,12 @@ export const KITS_DISPONIBLES: KitProducto[] = [
     tagline: 'Galería digital opcional por evento para adquirir fotos individuales sueltas',
     precio: 5000,
     popular: false,
-    cooperadoraAporte: 1000,
     icono: 'Bookmark',
     incluye: [
       '1 fotografía digital en alta resolución (HD) sin marca de agua',
       'Cobertura documental espontánea del calendario escolar',
       'Descarga inmediata a tu celular y computadora',
       '100% opcional evento por evento (sin compromiso)',
-      '🎓 20% de aporte destinado a la cooperadora escolar',
     ],
     fotosPermitidas: {
       individuales: 1,
@@ -73,6 +67,18 @@ export const KITS_DISPONIBLES: KitProducto[] = [
 ];
 
 export const COLEGIOS_EJEMPLO: Colegio[] = [
+  {
+    id: 'col-inicial-2026',
+    slug: 'nivel-inicial-2026',
+    nombre: 'Nivel Inicial 2026 (Jardín de Infantes)',
+    localidad: 'Ciclo Lectivo 2026',
+    zona: 'CABA',
+    eventoActual: 'Temporada Oficial Fotos Grupales y Retratos 2026',
+    codigoAcceso: 'JARDIN26',
+    grados: ['Sala 3 años', 'Sala 4 años', 'Sala 5 años'],
+    divisiones: ['A', 'B', 'C', 'TM', 'TT', 'Jornada Extendida'],
+    turnos: ['Mañana', 'Tarde', 'Jornada Extendida'],
+  },
   {
     id: 'col-1',
     slug: 'colegio-san-martin-de-tours',
@@ -118,18 +124,6 @@ export const COLEGIOS_EJEMPLO: Colegio[] = [
     eventoActual: 'Temporada Fotos Escolares 2026',
     codigoAcceso: 'BELGADR',
     grados: ['1° grado', '2° grado', '3° grado', '4° grado', '5° grado', '6° grado', '1° año', '6° año'],
-    divisiones: ['A', 'B'],
-    turnos: ['Mañana', 'Tarde'],
-  },
-  {
-    id: 'col-5',
-    slug: 'colegio-demo',
-    nombre: 'Colegio Modelo Demostración',
-    localidad: 'Vicente López',
-    zona: 'Zona Norte',
-    eventoActual: 'Muestra Abierta de Demostración 2026',
-    codigoAcceso: 'DEMO2026',
-    grados: ['Sala de 5', '1° grado', '2° grado', '3° grado', '4° grado', '5° grado', '6° grado'],
     divisiones: ['A', 'B'],
     turnos: ['Mañana', 'Tarde'],
   },
@@ -208,54 +202,45 @@ export const FOTOS_MUESTRA: Foto[] = [
   },
 ];
 
-export const PREGUNTAS_FRECUENTES = {
-  familias: [
-    {
-      pregunta: '¿Puedo comprar solo la versión digital?',
-      respuesta:
-        'Sí. El paquete Solo Digital HD ($15.000) incluye exactamente las mismas 3 fotos en alta resolución (grupal, individual y con docente) sin marcas de agua, para ver y guardar directamente en el celular o computadora.',
-    },
-    {
-      pregunta: '¿Cómo elijo y recibo mis fotos?',
-      respuesta:
-        'Accedés a una galería online privada protegida para ver las fotos en baja resolución con marca de agua. Elegís tus favoritas, abonás online sin efectivo y recibís el acceso inmediato por link + código QR y copia de respaldo por email. Si compraste el Kit Impreso + Digital ($30.000), las copias físicas se entregan en carpeta en el colegio.',
-    },
-    {
-      pregunta: '¿Qué pasa si una familia no quiere comprar?',
-      respuesta:
-        'Nada — no hay ninguna obligación. El modelo es 100% opcional evento por evento: cada familia decide libremente si compra, y quien no compra no abona nada ni queda comprometido.',
-    },
-    {
-      pregunta: '¿El colegio recibe dinero en efectivo o tengo que mandar sobres?',
-      respuesta:
-        'No, para nada. El colegio no toca dinero ni junta sobres. Todo el proceso de selección y pago se realiza 100% online mediante Mercado Pago o Transferencia bancaria directa.',
-    },
-    {
-      pregunta: '¿Puedo comprar fotos sueltas de otros actos del año?',
-      respuesta:
-        'Sí. Los eventos del año (actos patrios, torneos deportivos, salidas, muestras) cuentan con galería digital opcional, con fotos sueltas digitales disponibles desde $5.000 por toma.',
-    },
-  ],
-  colegios: [
-    {
-      pregunta: '¿El colegio tiene que cobrar o administrar algo?',
-      respuesta:
-        'No. Coordinamos, difundimos, cobramos y entregamos nosotros. La institución no administra pagos, reclamos ni entregas en ningún momento.',
-    },
-    {
-      pregunta: '¿Cómo funciona el aporte del 20% para la Cooperadora?',
-      respuesta:
-        'El 20% de cada venta se destina directamente a la cooperadora escolar ($6.000 por Kit Impreso + Digital y $3.000 por Solo Digital HD). Se calcula, rinde y transfiere automáticamente por evento sin trámites ni gestión administrativa para el colegio.',
-    },
-    {
-      pregunta: '¿Cómo se maneja el uso de imagen de los alumnos?',
-      respuesta:
-        'Gestionamos la autorización correspondiente conforme a la Ley 25.326 de Protección de Datos Personales, coordinado prolijamente junto con el colegio.',
-    },
-    {
-      pregunta: '¿Cuánto tiempo de clase insume la jornada de fotos?',
-      respuesta:
-        'Prácticamente nada. Contamos con un cronograma sincronizado de 10 a 15 minutos por curso en un espacio designado (SUM o biblioteca) para cuidar al 100% la rutina escolar.',
-    },
-  ],
-};
+export const PREGUNTAS_FRECUENTES = [
+  {
+    pregunta: '¿Cómo accedo a las fotos de mi hijo/a?',
+    respuesta:
+      'Podés ingresar directamente con el código provisto en el comunicado escolar (por ejemplo, SALA3TM o TOURS26) o buscar tu colegio en el buscador. El sistema filtrará automáticamente el curso, turno y división para que selecciones a tu hijo/a de la nómina.',
+  },
+  {
+    pregunta: '¿Puedo comprar solo la versión digital HD sin imprimir?',
+    respuesta:
+      'Sí. El paquete "Solo Digital HD" ($15.000) incluye exactamente las 3 fotos en alta resolución (grupal, individual y con docente) sin marcas de agua, listas para guardar y compartir desde tu celular o computadora.',
+  },
+  {
+    pregunta: '¿Cuáles son las 3 fotos que incluye el paquete?',
+    respuesta:
+      'El paquete oficial incluye 3 fotografías seleccionadas: 1 foto grupal de todo el grado/sala (en tamaño ampliado 20x30 cm en kit impreso), 1 retrato individual de tu hijo/a (15x21 cm) eligiendo tu toma favorita, y 1 foto de recuerdo con la docente/seño (15x21 cm).',
+  },
+  {
+    pregunta: '¿Cómo y cuándo recibo las fotos?',
+    respuesta:
+      'Los archivos digitales en alta definición (HD) sin marca de agua se descargan inmediatamente al acreditarse el pago, y además recibís una copia de respaldo por email y WhatsApp. Si elegiste el Kit Impreso, las copias físicas en papel satinado de alta durabilidad se entregan en carpeta de presentación rotulada en el colegio.',
+  },
+  {
+    pregunta: '¿Cuáles son los medios de pago disponibles?',
+    respuesta:
+      'Podés abonar 100% online y seguro mediante Mercado Pago (tarjeta de débito, crédito o saldo en cuenta) o por Transferencia Bancaria directa con comprobante. No se maneja efectivo ni sobres en la escuela.',
+  },
+  {
+    pregunta: '¿Qué pasa si tengo más de un hijo en el colegio?',
+    respuesta:
+      'Podés ingresar el código de cada uno de tus hijos o seleccionarlos por separado en sus respectivos cursos. Cada alumno cuenta con su galería privada con sus fotos individuales y grupales.',
+  },
+  {
+    pregunta: '¿Es obligatorio comprar las fotos?',
+    respuesta:
+      'No, para nada. La compra es 100% opcional y voluntaria. Podés ingresar a ver la galería de muestra con marca de agua y decidir libremente si querés conservar el recuerdo.',
+  },
+  {
+    pregunta: '¿Puedo adquirir fotos sueltas de actos u otros eventos del año?',
+    respuesta:
+      'Sí. Los eventos del año (actos patrios, muestras, deportes y salidas) cuentan con galería digital abierta donde podés adquirir fotos individuales digitales sueltas por $5.000 cada una.',
+  },
+];

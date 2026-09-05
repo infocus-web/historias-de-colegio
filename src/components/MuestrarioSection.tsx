@@ -37,8 +37,8 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
       imagen: 'https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=1200&q=85',
       specs: [
         'Formato ampliado 20x30 cm de máxima visibilidad y detalle',
-        'Diseño gráfico institucional con escudo y tipografía escolar',
-        'Cada maestro y directivo recibe su copia física de obsequio',
+        'Diseño con nombre del curso, división y año lectivo',
+        'Identificación nítida de cada compañero y docente',
         'Archivo en alta resolución (HD) incluido de regalo para las familias',
       ],
     },
@@ -231,12 +231,6 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
                         {kit.id === 'kit-evento-suelto' ? 'ARS / foto' : 'ARS / alumno'}
                       </span>
                     </div>
-                    {kit.cooperadoraAporte && (
-                      <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200/70 text-[11px] font-bold">
-                        <span>🎓 Aporte a Cooperadora:</span>
-                        <span className="text-emerald-950 font-extrabold">${kit.cooperadoraAporte.toLocaleString('es-AR')}</span>
-                      </div>
-                    )}
                   </div>
 
                   <ul className="space-y-3 mb-8">
@@ -264,40 +258,13 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
             ))}
           </div>
 
-          {/* Cooperadora 20% Callout Banner */}
-          <div className="mt-10 max-w-4xl mx-auto bg-gradient-to-r from-emerald-900 to-slate-900 text-white p-6 sm:p-8 rounded-3xl border border-emerald-700/40 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-start gap-4">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/30">
-                <span className="text-2xl">🎓</span>
-              </div>
-              <div>
-                <h4 className="text-base sm:text-lg font-bold font-['Outfit'] text-white">
-                  El 20% de cada venta queda para la cooperadora del colegio
-                </h4>
-                <p className="text-xs sm:text-sm text-slate-300 mt-1 leading-relaxed">
-                  Sin que la institución administre cobros ni gestione nada — se calcula y se rinde automáticamente por cada evento.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 shrink-0">
-              <div className="px-4 py-2.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 text-center">
-                <span className="block text-xl font-black text-amber-400 font-['Outfit']">$6.000</span>
-                <span className="text-[11px] text-slate-300">por Kit Impreso+Digital</span>
-              </div>
-              <div className="px-4 py-2.5 rounded-2xl bg-white/10 backdrop-blur-xs border border-white/10 text-center">
-                <span className="block text-xl font-black text-amber-400 font-['Outfit']">$3.000</span>
-                <span className="text-[11px] text-slate-300">por Solo Digital HD</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Benchmark Comparison with Traditional Photography Service */}
-          <div className="mt-6 max-w-4xl mx-auto bg-white rounded-2xl p-6 border border-slate-200 text-xs text-slate-700 space-y-3 shadow-xs">
+          {/* Families Value & Comparison Banner */}
+          <div className="mt-8 max-w-4xl mx-auto bg-white rounded-2xl p-6 border border-slate-200 text-xs text-slate-700 space-y-3 shadow-xs text-left">
             <p className="leading-relaxed">
-              <strong className="text-slate-900 font-bold">Comparación con el servicio actual del mercado:</strong> Hoy, en promedio, el servicio del día de fotos en el colegio cuesta entre <strong>$20.000 y $25.000</strong> por una carpeta más chica (3 fotos 15x21 + 4 fotos 6x4) y sin descarga digital. Por <strong>$30.000</strong>, el Kit Impreso + Digital suma un formato más grande (<strong>20x30cm</strong>) y la descarga en HD de regalo; quien prefiere no imprimir accede a las mismas 3 fotos en <strong>Solo Digital HD por $15.000</strong>.
+              <strong className="text-slate-900 font-bold">Transparencia y libertad de elección para cada familia:</strong> Podés elegir llevar el recuerdo impreso en papel fotográfico satinado de máxima durabilidad con la descarga HD incluida, o elegir la opción <strong>Solo Digital HD</strong> si preferís no imprimir copias físicas. Quien no desee comprar no abona nada, sin compromiso ni presiones.
             </p>
             <p className="text-slate-500 pt-2 border-t border-slate-100">
-              <strong>Otros eventos del año</strong> (actos patrios, deportes, salidas, muestras) se manejan con la misma lógica de elección libre: galería digital opcional por evento, desde <strong>$5.000</strong> por foto digital suelta para quien desee conservarla.
+              <strong>Otros eventos del ciclo lectivo</strong> (actos patrios, muestras, deportes y salidas) cuentan con galería digital independiente con fotos sueltas digitales en alta resolución desde <strong>$5.000</strong> por toma.
             </p>
           </div>
         </div>
