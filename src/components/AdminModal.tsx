@@ -1,14 +1,21 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   X, Lock, Camera, Upload, CheckCircle2, DollarSign, Package, 
   School, RefreshCw, Eye, AlertCircle, ArrowRight, Users, Search, CheckSquare, Square, Download,
-  Key, Copy, Check, MessageSquare, Sparkles, Send, ExternalLink
+  Key, Copy, Check, MessageSquare, Sparkles, Send, ExternalLink, Printer, HardDrive, FileCode, Mail
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA, KITS_DISPONIBLES } from '../data/colegiosData';
 import { ALUMNOS_NOMINA_2026, SECCIONES_INICIAL_2026 } from '../data/alumnosData';
 import { 
   getCodigosCursos, guardarCodigoCurso, regenerarTodosLosCodigos, getMensajeWhatsAppParaCurso 
 } from '../data/codigosCursos';
+import { 
+  obtenerPedidosGuardados, 
+  guardarPedidosEnStorage, 
+  PedidoEscolarCompleto 
+} from '../services/pedidosLabService';
+import AdminLaboratorioTab from './AdminLaboratorioTab';
+import AdminLoteFotosTab from './AdminLoteFotosTab';
 import { Colegio, Foto } from '../types';
 
 interface AdminModalProps {
@@ -22,8 +29,17 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
   const [adminPin, setAdminPin] = useState('');
   const [pinError, setPinError] = useState('');
 
-  // Admin tabs
-  const [activeTab, setActiveTab] = useState<'pedidos' | 'codigos' | 'alumnos' | 'subir' | 'colegios'>('pedidos');
+  // Admin tabs - Laboratorio as primary tool for photographers
+  const [activeTab, setActiveTab] = useState<'laboratorio' | 'pedidos' | 'subir' | 'codigos' | 'alumnos' | 'colegios'>('laboratorio');
+
+  // Real synced orders for photo lab and families
+  const [pedidosCompletos, setPedidosCompletos] = useState<PedidoEscolarCompleto[]>(() => obtenerPedidosGuardados());
+
+  useEffect(() => {
+    if (isOpen) {
+      setPedidosCompletos(obtenerPedidosGuardados());
+    }
+  }, [isOpen, activeTab]);
 
   // Course codes state
   const [codigosMap, setCodigosMap] = useState<Record<string, string>>(() => getCodigosCursos());
@@ -369,12 +385,13 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
             </div>
 
             {/* Navigation tabs */}
-            <div className="flex border-b border-slate-200 gap-4 overflow-x-auto pb-0.5">
+            <div className="flex border-b border-slate-200 gap-3 overflow-x-auto pb-0.5">
               {[
-                { id: 'pedidos', label: 'Pedidos de Familias', icon: Package },
+                { id: 'laboratorio', label: 'Laboratorio & Ensobrado (ZIP)', icon: Printer },
+                { id: 'pedidos', label: `Pedidos Familias (${pedidosCompletos.length})`, icon: Package },
+                { id: 'subir', label: 'Cargar Fotos Curso (100GB Supabase)', icon: HardDrive },
                 { id: 'codigos', label: 'Generar Códigos por Curso', icon: Key },
                 { id: 'alumnos', label: `Nómina 2026 (${ALUMNOS_NOMINA_2026.length})`, icon: Users },
-                { id: 'subir', label: 'Subir Fotos con Marca de Agua', icon: Camera },
                 { id: 'colegios', label: 'Colegios y Códigos', icon: School },
               ].map(t => {
                 const Icon = t.icon;
@@ -383,7 +400,7 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
                   <button
                     key={t.id}
                     onClick={() => setActiveTab(t.id as any)}
-                    className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all ${
+                    className={`pb-3 text-xs sm:text-sm font-bold flex items-center gap-2 border-b-2 transition-all whitespace-nowrap cursor-pointer ${
                       active ? 'border-amber-500 text-slate-900' : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                   >
@@ -394,39 +411,65 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
               })}
             </div>
 
+            {/* TAB: LABORATORIO & ENSOBRADO */}
+            {activeTab === 'laboratorio' && (
+              <AdminLaboratorioTab
+                pedidos={pedidosCompletos}
+                onActualizarPedidos={(actualizados) => {
+                  setPedidosCompletos(actualizados);
+                  guardarPedidosEnStorage(actualizados);
+                }}
+                colegioNombre={colegiosList[0]?.nombre}
+              />
+            )}
+
             {/* TAB 1: PEDIDOS */}
             {activeTab === 'pedidos' && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-base font-bold text-slate-900">Listado de Pedidos Recientes</h3>
-                  <span className="text-xs text-slate-500">Actualizado en tiempo real</span>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Listado de Pedidos de Familias</h3>
+                    <span className="text-xs text-slate-500">Sincronizados en tiempo real con el portal de familias</span>
+                  </div>
+                  <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">
+                    {pedidosCompletos.filter(p => p.estadoPago === 'aprobado').length} Aprobados para Revelado
+                  </span>
                 </div>
 
                 <div className="overflow-x-auto rounded-2xl border border-slate-200">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200">
+                    <thead className="bg-slate-50 text-slate-500 uppercase font-semibold border-b border-slate-200 text-[10px] tracking-wider">
                       <tr>
                         <th className="py-3 px-4">N° Pedido</th>
                         <th className="py-3 px-4">Colegio & Alumno</th>
-                        <th className="py-3 px-4">Kit</th>
+                        <th className="py-3 px-4">Código Minilab</th>
+                        <th className="py-3 px-4">Kit Seleccionado</th>
                         <th className="py-3 px-4">Total</th>
                         <th className="py-3 px-4">Pago</th>
                         <th className="py-3 px-4">Acción</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                      {pedidos.map(p => (
-                        <tr key={p.id} className="hover:bg-slate-50">
+                      {pedidosCompletos.map(p => (
+                        <tr key={p.id} className="hover:bg-slate-50 transition-colors">
                           <td className="py-3 px-4 font-mono font-bold text-slate-900">
                             {p.id}
                             <span className="block text-[10px] font-normal text-slate-400">{p.fecha}</span>
                           </td>
                           <td className="py-3 px-4">
-                            <span className="font-bold text-slate-900">{p.alumno}</span>
-                            <span className="block text-[11px] text-slate-500">{p.colegio}</span>
+                            <span className="font-bold text-slate-900">{p.alumnoNombre}</span>
+                            <span className="block text-[11px] text-slate-500">{p.colegioNombre} · {p.grado} "{p.division}"</span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="font-mono text-[11px] font-bold text-amber-900 bg-amber-100 px-2 py-0.5 rounded border border-amber-300">
+                              {p.codigoAlumno}
+                            </span>
                           </td>
                           <td className="py-3 px-4 font-medium text-slate-800">
-                            {p.kit}
+                            {p.kitNombre}
+                            <span className="block text-[10px] text-slate-400">
+                              {p.archivosParaLaboratorio.length} archivos para el laboratorio
+                            </span>
                           </td>
                           <td className="py-3 px-4 font-bold text-slate-900">
                             ${p.total.toLocaleString('es-AR')}
@@ -445,14 +488,21 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
                             {p.estadoPago === 'pendiente' ? (
                               <button
                                 onClick={() => {
-                                  setPedidos(pedidos.map(item => item.id === p.id ? { ...item, estadoPago: 'aprobado' } : item));
+                                  const actualizados = pedidosCompletos.map(item => item.id === p.id ? { ...item, estadoPago: 'aprobado' as const } : item);
+                                  setPedidosCompletos(actualizados);
+                                  guardarPedidosEnStorage(actualizados);
                                 }}
-                                className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px]"
+                                className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] shadow-xs transition-colors cursor-pointer"
                               >
-                                Aprobar Transferencia
+                                Aprobar Pago
                               </button>
                             ) : (
-                              <span className="text-[11px] text-slate-400">Sin acciones</span>
+                              <button
+                                onClick={() => setActiveTab('laboratorio')}
+                                className="text-[11px] font-semibold text-amber-700 hover:text-amber-800 underline cursor-pointer"
+                              >
+                                Ver en Laboratorio
+                              </button>
                             )}
                           </td>
                         </tr>
@@ -851,115 +901,7 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
               </div>
             )}
             {activeTab === 'subir' && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <form onSubmit={handleUploadSubmit} className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-200">
-                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                    Asignar y Proteger Foto Escolar
-                  </h3>
-
-                  {uploadSuccess && (
-                    <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>¡Foto publicada con marca de agua exitosamente!</span>
-                    </div>
-                  )}
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Colegio</label>
-                    <select
-                      value={targetColegioId}
-                      onChange={e => setTargetColegioId(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
-                    >
-                      {colegiosList.map(c => (
-                        <option key={c.id} value={c.id}>{c.nombre}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">Categoría</label>
-                      <select
-                        value={targetCategoria}
-                        onChange={e => setTargetCategoria(e.target.value as any)}
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
-                      >
-                        <option value="individual">Individual</option>
-                        <option value="grupal">Grupal</option>
-                        <option value="docente">Con Docente</option>
-                      </select>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-xs font-bold text-slate-700">Grado</label>
-                      <input
-                        type="text"
-                        value={targetGrado}
-                        onChange={e => setTargetGrado(e.target.value)}
-                        placeholder="3° grado"
-                        className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">Título / Descripción</label>
-                    <input
-                      type="text"
-                      value={targetTitulo}
-                      onChange={e => setTargetTitulo(e.target.value)}
-                      placeholder="Retrato individual toma A"
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs bg-white"
-                    />
-                  </div>
-
-                  <div className="space-y-1 pt-1">
-                    <label className="text-xs font-bold text-slate-700">Archivo de Foto</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileSelect}
-                      className="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-amber-100 file:text-amber-900"
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={!watermarkedUrl || isProcessingWatermark}
-                    className="w-full py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs disabled:opacity-40 transition-all flex items-center justify-center gap-2"
-                  >
-                    <Upload className="w-4 h-4" />
-                    <span>Publicar en Galería Escolar</span>
-                  </button>
-                </form>
-
-                {/* Live canvas preview */}
-                <div className="bg-slate-100 rounded-2xl p-6 border border-slate-200 flex flex-col items-center justify-center text-center">
-                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 self-start mb-3">
-                    Resultado con Marca de Agua
-                  </h4>
-
-                  {isProcessingWatermark ? (
-                    <div className="py-16 space-y-2">
-                      <RefreshCw className="w-8 h-8 text-amber-500 animate-spin mx-auto" />
-                      <p className="text-xs text-slate-500 font-medium">Estampando marca de agua en Canvas...</p>
-                    </div>
-                  ) : watermarkedUrl ? (
-                    <div className="space-y-2 w-full">
-                      <div className="relative aspect-[4/3] rounded-xl overflow-hidden border border-slate-300 bg-white">
-                        <img src={watermarkedUrl} alt="Watermark preview" className="w-full h-full object-contain" />
-                      </div>
-                      <span className="text-[11px] text-emerald-600 font-bold block">✓ Marca de agua protegida</span>
-                    </div>
-                  ) : (
-                    <div className="py-16 text-slate-400 space-y-2">
-                      <Camera className="w-10 h-10 mx-auto stroke-[1.5]" />
-                      <p className="text-xs">Cargá una foto para generar la muestra con marca de agua</p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <AdminLoteFotosTab />
             )}
 
             {/* TAB 3: COLEGIOS */}

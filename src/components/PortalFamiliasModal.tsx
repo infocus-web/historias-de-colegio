@@ -27,10 +27,15 @@ import {
   Layers,
   CheckCheck,
   AlertCircle,
+  Mail,
+  FolderCheck,
+  FileCode,
+  Printer,
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA, KITS_DISPONIBLES } from '../data/colegiosData';
 import { ALUMNOS_NOMINA_2026, getNombreCompleto } from '../data/alumnosData';
 import { buscarSeccionPorCodigo } from '../data/codigosCursos';
+import { registrarPedidoDesdePortal, PedidoEscolarCompleto } from '../services/pedidosLabService';
 import WatermarkOverlay from './WatermarkOverlay';
 import { Colegio, KitProducto, Foto, Alumno } from '../types';
 
@@ -136,6 +141,7 @@ export default function PortalFamiliasModal({
   const [metodoPago, setMetodoPago] = useState<'mercadopago' | 'transferencia'>('mercadopago');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [numeroPedido, setNumeroPedido] = useState('');
+  const [pedidoGenerado, setPedidoGenerado] = useState<PedidoEscolarCompleto | null>(null);
 
   // Sync preselected options
   useEffect(() => {
@@ -253,8 +259,40 @@ export default function PortalFamiliasModal({
   const handleCompletarPago = () => {
     setIsProcessingPayment(true);
     setTimeout(() => {
-      const code = `IFS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
-      setNumeroPedido(code);
+      // Find student in roster if possible to get official roster list number
+      const matchAlumno = ALUMNOS_NOMINA_2026.find(a => 
+        getNombreCompleto(a).toLowerCase() === nombreAlumno.toLowerCase() ||
+        `${a.apellido}, ${a.nombre}`.toLowerCase() === nombreAlumno.toLowerCase() ||
+        `${a.nombre} ${a.apellido}`.toLowerCase() === nombreAlumno.toLowerCase()
+      );
+      const numLista = matchAlumno ? (ALUMNOS_NOMINA_2026.indexOf(matchAlumno) + 1) : Math.floor(1 + Math.random() * 25);
+      const codCurso = codigoAcceso.trim() || seccionDetectada?.nemotecnico || 'SALA3TM';
+
+      const nuevoPedido = registrarPedidoDesdePortal({
+        colegioId: selectedColegio?.id || 'col-inicial-2026',
+        colegioNombre: selectedColegio?.nombre || 'Colegio San Martín de Tours (Nivel Inicial)',
+        cursoCodigo: codCurso,
+        grado: grado || 'Sala 3',
+        division: division || 'Única',
+        turno: turno || 'Mañana',
+        alumnoNombre: nombreAlumno || 'Alumno Escolar',
+        alumnoNumeroLista: numLista,
+        tutorNombre: tutorNombre || 'Familia',
+        tutorTelefono: tutorWhatsapp || '1154893210',
+        tutorEmail: tutorEmail || 'familia@ejemplo.com',
+        kitId: selectedKit.id,
+        kitNombre: selectedKit.nombre,
+        total: total,
+        metodoPago: metodoPago,
+        fotosSeleccionadas: {
+          individualId: fotoSeleccionadaIndividual,
+          grupalId: fotoSeleccionadaGrupal,
+          docenteId: fotoSeleccionadaDocente
+        }
+      });
+
+      setNumeroPedido(nuevoPedido.id);
+      setPedidoGenerado(nuevoPedido);
       setIsProcessingPayment(false);
       setStep(5);
     }, 1200);
@@ -1658,6 +1696,49 @@ export default function PortalFamiliasModal({
                   </span>
                 </div>
 
+                {/* Email Delivery Confirmation Card */}
+                <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 flex items-start gap-3">
+                  <Mail className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <p className="font-bold text-emerald-950">
+                      ¡Fotos HD y comprobante enviados a tu correo!
+                    </p>
+                    <p className="text-emerald-700 mt-0.5">
+                      Enviamos el enlace privado de descarga en máxima resolución a{' '}
+                      <strong>{tutorEmail || pedidoGenerado?.tutorEmail || 'tu email registrado'}</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Photo Lab File Renaming & Student Folder Information */}
+                {pedidoGenerado && (
+                  <div className="p-3.5 rounded-xl bg-slate-900 text-white text-xs space-y-2">
+                    <div className="flex items-center justify-between pb-1 border-b border-slate-800">
+                      <div className="flex items-center gap-1.5 text-amber-400 font-bold">
+                        <FolderCheck className="w-4 h-4" />
+                        <span>Carpeta del Alumno para Laboratorio:</span>
+                      </div>
+                      <span className="font-mono text-[11px] bg-slate-800 px-2 py-0.5 rounded text-amber-300">
+                        {pedidoGenerado.codigoAlumno}
+                      </span>
+                    </div>
+
+                    <p className="text-[11px] text-slate-400">
+                      Tus fotos elegidas se organizaron y renombraron con el código único del alumno para que el minilab fotográfico imprima su nombre en el dorso:
+                    </p>
+
+                    <div className="space-y-1 font-mono text-[10px] bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
+                      {pedidoGenerado.archivosParaLaboratorio.map((archivo, idx) => (
+                        <div key={idx} className="flex items-center gap-1.5 text-slate-300 truncate">
+                          <FileCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span className="text-slate-400 capitalize">{archivo.tipo} ({archivo.tamanoImpresion}):</span>
+                          <span className="text-emerald-300 font-semibold truncate">{archivo.nombreArchivoLab}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="text-xs text-slate-600 space-y-1">
                   <p>
                     <strong>Kit:</strong> {selectedKit.nombre} (${total.toLocaleString('es-AR')} ARS)
@@ -1666,7 +1747,7 @@ export default function PortalFamiliasModal({
                     <strong>Curso:</strong> {grado} "{division}" · Turno {turno}
                   </p>
                   <p>
-                    <strong>Entrega impresa:</strong> Se entrega en sobre cerrado rotulado con el nombre del alumno en la escuela en la fecha coordinada.
+                    <strong>Entrega impresa:</strong> Se entrega en sobre cerrado rotulado con el código y nombre del alumno en la institución.
                   </p>
                   <p>
                     <strong>WhatsApp de contacto:</strong> {tutorWhatsapp}
@@ -1679,17 +1760,17 @@ export default function PortalFamiliasModal({
                 <div>
                   <p className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
                     <Download className="w-4 h-4 text-amber-600" />
-                    Tus fotos digitales en Ultra HD ya están listas
+                    Descarga Inmediata en Ultra HD (Sin Marcas)
                   </p>
                   <p className="text-[11px] text-amber-700">
-                    Podés descargarlas ahora mismo sin marcas de agua o recibirlas en tu WhatsApp.
+                    Podés descargar tus fotos ahora mismo en alta resolución además de recibirlas en tu correo.
                   </p>
                 </div>
                 <a
                   href={FOTOS_MUESTRA[0].url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 shrink-0"
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center gap-1.5 shrink-0 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Descargar Fotos HD</span>
