@@ -24,13 +24,13 @@ export default function AdminLaboratorioTab({
   colegioNombre = 'Colegio San Martín de Tours (Nivel Inicial)'
 }: AdminLaboratorioTabProps) {
   const [cursoFiltro, setCursoFiltro] = useState<string>('todos');
-  const [organizarEnSubcarpetas, setOrganizarEnSubcarpetas] = useState<boolean>(true);
+  const [modoEstructuraCarpetas, setModoEstructuraCarpetas] = useState<'solo_2_carpetas_tamano' | 'por_alumno'>('solo_2_carpetas_tamano');
   const [busquedaAlumno, setBusquedaAlumno] = useState<string>('');
   const [isDescargandoZip, setIsDescargandoZip] = useState<boolean>(false);
   const [zipFeedbackMsg, setZipFeedbackMsg] = useState<string | null>(null);
   const [emailFeedbackMsg, setEmailFeedbackMsg] = useState<string | null>(null);
 
-  // Selected photo to preview backprint
+  // Selected photo to preview backprint (defaults to the user's exact example)
   const [fotoPreviewDorso, setFotoPreviewDorso] = useState<{
     nombreArchivo: string;
     alumnoNombre: string;
@@ -38,9 +38,9 @@ export default function AdminLaboratorioTab({
     tamano: string;
     tipo: string;
   }>({
-    nombreArchivo: 'SALA3TM_01_ABBA_FAZIO_AGUSTIN_INDIVIDUAL_15x21.jpg',
-    alumnoNombre: 'Abba Fazio, Agustín',
-    codigoCurso: 'SALA3TM',
+    nombreArchivo: '3ATT_FABRICIO_PEREZ.jpg',
+    alumnoNombre: 'Fabricio Pérez',
+    codigoCurso: '3ATT',
     tamano: '15x21 cm',
     tipo: 'Retrato Individual'
   });
@@ -84,22 +84,25 @@ export default function AdminLaboratorioTab({
       const zipBlob = await descargarLoteLaboratorioZip(pedidos, {
         nombreColegio: colegioNombre,
         filtroCurso: cursoFiltro,
-        organizarEnSubcarpetasPorAlumno: organizarEnSubcarpetas
+        estructuraCarpetas: modoEstructuraCarpetas
       });
 
       // Trigger download
       const url = URL.createObjectURL(zipBlob);
       const a = document.createElement('a');
       a.href = url;
-      const nombreArchivoZip = `LABORATORIO_${cursoFiltro === 'todos' ? 'TODOS_LOS_CURSOS' : cursoFiltro}_${Date.now()}.zip`;
+      const nombreArchivoZip = `LABORATORIO_${cursoFiltro === 'todos' ? 'TODOS_LOS_CURSOS' : cursoFiltro}_${modoEstructuraCarpetas === 'solo_2_carpetas_tamano' ? '2CARPETAS' : 'POR_ALUMNO'}.zip`;
       a.download = nombreArchivoZip;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      setZipFeedbackMsg(`¡Lote descargado exitosamente: ${nombreArchivoZip}! Todos los archivos están renombrados con el código de alumno.`);
-      setTimeout(() => setZipFeedbackMsg(null), 6000);
+      const detalleMsg = modoEstructuraCarpetas === 'solo_2_carpetas_tamano'
+        ? '¡Lote generado con exactamente 2 carpetas (15x21 y 20x30) y archivos JPG sueltos con código de cliente (ej: 3ATT_FABRICIO_PEREZ.jpg)!'
+        : '¡Lote generado con subcarpetas por alumno!';
+      setZipFeedbackMsg(detalleMsg);
+      setTimeout(() => setZipFeedbackMsg(null), 8000);
     } catch (err) {
       console.error('Error generando lote ZIP:', err);
       setZipFeedbackMsg('Hubo un inconveniente al empaquetar el ZIP. Por favor reintentá.');
@@ -256,7 +259,7 @@ export default function AdminLaboratorioTab({
                 </span>
               </h3>
               <p className="text-xs text-slate-300 mt-0.5">
-                Al descargar el lote, el sistema organiza las carpetas por alumno y renombra cada archivo con su código escolar para que el minilab estampe el nombre en el dorso de la foto.
+                Genera un archivo ZIP con exactamente 2 carpetas (<code className="text-amber-300 font-bold">15x21</code> y <code className="text-amber-300 font-bold">20x30</code>) y los archivos JPG sueltos dentro con el código de cliente (ej: <code className="text-amber-300 font-bold">3ATT_FABRICIO_PEREZ.jpg</code>).
               </p>
             </div>
           </div>
@@ -294,20 +297,39 @@ export default function AdminLaboratorioTab({
 
         {/* Packing & Options bar */}
         <div className="pt-3 border-t border-slate-700/80 flex flex-wrap items-center justify-between gap-4 text-xs">
-          <div className="flex items-center gap-2">
-            <label className="text-slate-300 font-semibold flex items-center gap-2 cursor-pointer">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-slate-400 font-bold uppercase text-[10px] tracking-wider">Estructura del ZIP:</span>
+            
+            <label className="text-slate-200 font-semibold flex items-center gap-2 cursor-pointer hover:text-white transition-colors">
               <input
-                type="checkbox"
-                checked={organizarEnSubcarpetas}
-                onChange={(e) => setOrganizarEnSubcarpetas(e.target.checked)}
-                className="w-4 h-4 rounded text-amber-400 focus:ring-amber-400"
+                type="radio"
+                name="estructuraCarpetas"
+                value="solo_2_carpetas_tamano"
+                checked={modoEstructuraCarpetas === 'solo_2_carpetas_tamano'}
+                onChange={() => setModoEstructuraCarpetas('solo_2_carpetas_tamano')}
+                className="w-4 h-4 text-amber-400 focus:ring-amber-400"
               />
-              <span>Crear subcarpeta individual por cada alumno (ej: <code className="text-amber-300 bg-slate-950 px-1 py-0.5 rounded">SALA3TM/01_ABBA_FAZIO_AGUSTIN/</code>)</span>
+              <span className="flex items-center gap-1.5">
+                <span>Solo 2 carpetas (<code className="text-amber-300 bg-slate-950 px-1 py-0.5 rounded font-mono">15x21</code> y <code className="text-amber-300 bg-slate-950 px-1 py-0.5 rounded font-mono">20x30</code>) con archivos sueltos</span>
+                <span className="text-[10px] bg-amber-400/20 text-amber-300 font-bold px-1.5 py-0.5 rounded">Recomendado</span>
+              </span>
+            </label>
+
+            <label className="text-slate-400 font-normal flex items-center gap-2 cursor-pointer hover:text-slate-200 transition-colors">
+              <input
+                type="radio"
+                name="estructuraCarpetas"
+                value="por_alumno"
+                checked={modoEstructuraCarpetas === 'por_alumno'}
+                onChange={() => setModoEstructuraCarpetas('por_alumno')}
+                className="w-4 h-4 text-amber-400 focus:ring-amber-400"
+              />
+              <span>Subcarpeta por alumno (<code className="text-slate-300 bg-slate-950 px-1 py-0.5 rounded font-mono">CURSO/ALUMNO/</code>)</span>
             </label>
           </div>
 
           <span className="text-[11px] text-slate-400">
-            Incluye planilla <code className="text-slate-200">00_PLANILLA_CONTROL_ENSOBRADO.txt</code> para mesa de empaque.
+            Nomenclatura: <code className="text-amber-300 font-bold">[CURSO]_[ALUMNO].jpg</code> (ej: <code className="text-amber-300 font-mono font-bold">3ATT_FABRICIO_PEREZ.jpg</code>)
           </span>
         </div>
       </div>
@@ -508,7 +530,16 @@ export default function AdminLaboratorioTab({
                               >
                                 <div className="flex items-center gap-1.5 truncate">
                                   <FileCode className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                                  <span className="truncate">{archivo.nombreArchivoLab}</span>
+                                  <span className="truncate">
+                                    {modoEstructuraCarpetas === 'solo_2_carpetas_tamano' ? (
+                                      <>
+                                        <span className="text-amber-700 font-semibold">{archivo.tamanoImpresion}/</span>
+                                        <span>{archivo.nombreArchivoLab}</span>
+                                      </>
+                                    ) : (
+                                      <span>{archivo.nombreArchivoLab}</span>
+                                    )}
+                                  </span>
                                 </div>
                                 <span className="text-[10px] uppercase font-bold text-slate-500 shrink-0 bg-white px-1.5 py-0.5 rounded border border-slate-200">
                                   {archivo.tamanoImpresion}
