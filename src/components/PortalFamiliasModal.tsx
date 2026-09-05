@@ -31,13 +31,16 @@ import {
   FolderCheck,
   FileCode,
   Printer,
+  Copy,
+  Plus,
+  Minus,
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA, KITS_DISPONIBLES } from '../data/colegiosData';
-import { ALUMNOS_NOMINA_2026, getNombreCompleto } from '../data/alumnosData';
 import { buscarSeccionPorCodigo } from '../data/codigosCursos';
 import { registrarPedidoDesdePortal, PedidoEscolarCompleto } from '../services/pedidosLabService';
+import { obtenerFamiliaActiva, InscripcionFamilia } from '../services/inscripcionesService';
 import WatermarkOverlay from './WatermarkOverlay';
-import { Colegio, KitProducto, Foto, Alumno } from '../types';
+import { Colegio, KitProducto, Foto } from '../types';
 
 interface PortalFamiliasModalProps {
   isOpen: boolean;
@@ -45,6 +48,7 @@ interface PortalFamiliasModalProps {
   preselectedColegioId?: string;
   preselectedKitId?: string;
   preselectedCodigo?: string;
+  onOpenInscripcion?: () => void;
 }
 
 export default function PortalFamiliasModal({
@@ -53,6 +57,7 @@ export default function PortalFamiliasModal({
   preselectedColegioId,
   preselectedKitId,
   preselectedCodigo,
+  onOpenInscripcion,
 }: PortalFamiliasModalProps) {
   // Navigation Steps
   // 1: Colegio y Alumno
@@ -79,44 +84,7 @@ export default function PortalFamiliasModal({
   const [seccionDetectada, setSeccionDetectada] = useState<any | null>(null);
   const [codigoValidadoMsg, setCodigoValidadoMsg] = useState<string | null>(null);
   const [codigoErrorMsg, setCodigoErrorMsg] = useState<string | null>(null);
-  const [showRosterSuggestions, setShowRosterSuggestions] = useState(false);
-  const [showRosterModal, setShowRosterModal] = useState(false);
-  const [rosterFilterSala, setRosterFilterSala] = useState<string>('todas');
-  const [rosterSearchModal, setRosterSearchModal] = useState<string>('');
-
-  const sugerenciasAlumnos = useMemo(() => {
-    if (!nombreAlumno || nombreAlumno.trim().length < 2) return [];
-    const q = nombreAlumno.toLowerCase().trim();
-    return ALUMNOS_NOMINA_2026.filter((a) => {
-      const full = `${a.apellido} ${a.nombre}`.toLowerCase();
-      const inv = `${a.nombre} ${a.apellido}`.toLowerCase();
-      return full.includes(q) || inv.includes(q);
-    }).slice(0, 8);
-  }, [nombreAlumno]);
-
-  const seleccionarAlumnoDeNomina = (alumno: Alumno) => {
-    setNombreAlumno(getNombreCompleto(alumno));
-    if (alumno.grado) setGrado(alumno.grado);
-    if (alumno.turno) setTurno(alumno.turno);
-    if (alumno.division) setDivision(alumno.division);
-    setShowRosterSuggestions(false);
-    setShowRosterModal(false);
-  };
-
-  const alumnosParaModal = useMemo(() => {
-    return ALUMNOS_NOMINA_2026.filter((a) => {
-      const matchSala =
-        rosterFilterSala === 'todas' ||
-        a.grado.toLowerCase().includes(rosterFilterSala.toLowerCase());
-      const q = rosterSearchModal.toLowerCase().trim();
-      const matchQuery =
-        !q ||
-        `${a.apellido} ${a.nombre}`.toLowerCase().includes(q) ||
-        `${a.nombre} ${a.apellido}`.toLowerCase().includes(q) ||
-        a.division.toLowerCase().includes(q);
-      return matchSala && matchQuery;
-    });
-  }, [rosterFilterSala, rosterSearchModal]);
+  const [familiaActiva, setFamiliaActiva] = useState<InscripcionFamilia | null>(null);
 
   // Step 2: Gallery
   const [categoriaActiva, setCategoriaActiva] = useState<'individual' | 'grupal' | 'docente' | 'patio'>('individual');
@@ -133,6 +101,9 @@ export default function PortalFamiliasModal({
   const [extraStickers, setExtraStickers] = useState(false);
   const [extraPortarretrato, setExtraPortarretrato] = useState(false);
   const [extraLlavero, setExtraLlavero] = useState(false);
+  // Copias extras impresas para abuelos/familiares (duplicados automáticos para laboratorio)
+  const [extraCopiaIndividual, setExtraCopiaIndividual] = useState<number>(0);
+  const [extraCopiaGrupal, setExtraCopiaGrupal] = useState<number>(0);
 
   // Step 4: Checkout
   const [tutorNombre, setTutorNombre] = useState('');
@@ -143,7 +114,27 @@ export default function PortalFamiliasModal({
   const [numeroPedido, setNumeroPedido] = useState('');
   const [pedidoGenerado, setPedidoGenerado] = useState<PedidoEscolarCompleto | null>(null);
 
-  // Sync preselected options
+  // Sync preselected options and active family registration
+  useEffect(() => {
+    if (isOpen) {
+      const fam = obtenerFamiliaActiva();
+      setFamiliaActiva(fam);
+      if (fam) {
+        setTutorNombre(fam.padreNombre);
+        setTutorWhatsapp(fam.telefonoWhatsApp);
+        setTutorEmail(fam.email);
+        setNombreAlumno(`${fam.alumnoNombre} ${fam.alumnoApellido}`);
+        if (fam.turno) setTurno(fam.turno);
+        if (fam.grado) setGrado(fam.grado);
+        if (fam.division) setDivision(fam.division);
+        if (fam.colegioId) {
+          const col = COLEGIOS_EJEMPLO.find((c) => c.id === fam.colegioId);
+          if (col) setSelectedColegio(col);
+        }
+      }
+    }
+  }, [isOpen]);
+
   useEffect(() => {
     if (preselectedColegioId) {
       const col = COLEGIOS_EJEMPLO.find((c) => c.id === preselectedColegioId);
@@ -232,11 +223,15 @@ export default function PortalFamiliasModal({
   );
 
   // Calculate Total
+  const PRECIO_COPIA_EXTRA_15x21 = 3800;
+  const PRECIO_COPIA_EXTRA_20x30 = 4900;
   const precioBase = selectedKit.precio;
   const precioStickers = extraStickers ? 2500 : 0;
   const precioPortarretrato = extraPortarretrato ? 4200 : 0;
   const precioLlavero = extraLlavero ? 2200 : 0;
-  const total = precioBase + precioStickers + precioPortarretrato + precioLlavero;
+  const precioCopiasExtras =
+    extraCopiaIndividual * PRECIO_COPIA_EXTRA_15x21 + extraCopiaGrupal * PRECIO_COPIA_EXTRA_20x30;
+  const total = precioBase + precioStickers + precioPortarretrato + precioLlavero + precioCopiasExtras;
 
   // Handlers
   const handleIngresarCodigo = () => {
@@ -259,13 +254,7 @@ export default function PortalFamiliasModal({
   const handleCompletarPago = () => {
     setIsProcessingPayment(true);
     setTimeout(() => {
-      // Find student in roster if possible to get official roster list number
-      const matchAlumno = ALUMNOS_NOMINA_2026.find(a => 
-        getNombreCompleto(a).toLowerCase() === nombreAlumno.toLowerCase() ||
-        `${a.apellido}, ${a.nombre}`.toLowerCase() === nombreAlumno.toLowerCase() ||
-        `${a.nombre} ${a.apellido}`.toLowerCase() === nombreAlumno.toLowerCase()
-      );
-      const numLista = matchAlumno ? (ALUMNOS_NOMINA_2026.indexOf(matchAlumno) + 1) : Math.floor(1 + Math.random() * 25);
+      const numLista = Math.floor(1 + Math.random() * 25);
       const codCurso = codigoAcceso.trim() || seccionDetectada?.nemotecnico || 'SALA3TM';
 
       const nuevoPedido = registrarPedidoDesdePortal({
@@ -287,8 +276,12 @@ export default function PortalFamiliasModal({
         fotosSeleccionadas: {
           individualId: fotoSeleccionadaIndividual,
           grupalId: fotoSeleccionadaGrupal,
-          docenteId: fotoSeleccionadaDocente
-        }
+          docenteId: fotoSeleccionadaDocente,
+        },
+        copiasExtras: {
+          individual15x21: extraCopiaIndividual,
+          grupal20x30: extraCopiaGrupal,
+        },
       });
 
       setNumeroPedido(nuevoPedido.id);
@@ -813,73 +806,46 @@ export default function PortalFamiliasModal({
                       <User className="w-4 h-4 text-amber-600" />
                       <span>Datos del alumno/a en {selectedColegio.nombre}:</span>
                     </h4>
-                    <button
-                      type="button"
-                      onClick={() => setShowRosterModal(true)}
-                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-amber-600" />
-                      <span>Ver nómina completa ({ALUMNOS_NOMINA_2026.length} alumnos)</span>
-                    </button>
+                    {familiaActiva ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg flex items-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Inscripto: {familiaActiva.padreNombre} (Tutor)
+                        </span>
+                        {onOpenInscripcion && (
+                          <button
+                            type="button"
+                            onClick={onOpenInscripcion}
+                            className="text-[11px] text-amber-700 hover:text-amber-800 underline font-semibold cursor-pointer"
+                          >
+                            Cambiar datos
+                          </button>
+                        )}
+                      </div>
+                    ) : onOpenInscripcion ? (
+                      <button
+                        type="button"
+                        onClick={onOpenInscripcion}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 px-3 py-1.5 rounded-lg transition-colors cursor-pointer shadow-xs"
+                      >
+                        <span>Inscribirme / Crear usuario</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    ) : null}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 relative">
-                    <div className="sm:col-span-2 relative">
+                    <div className="sm:col-span-2">
                       <label className="text-[11px] font-semibold text-slate-600 block mb-1">
                         Nombre y Apellido del alumno/a
                       </label>
                       <input
                         type="text"
                         value={nombreAlumno}
-                        onChange={(e) => {
-                          setNombreAlumno(e.target.value);
-                          setShowRosterSuggestions(true);
-                        }}
-                        onFocus={() => setShowRosterSuggestions(true)}
-                        placeholder="Escribí apellido o nombre..."
-                        className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                        onChange={(e) => setNombreAlumno(e.target.value)}
+                        placeholder="Ej: Benjamín Gómez"
+                        className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-400 font-medium"
                       />
-
-                      {/* Autocomplete Dropdown */}
-                      {showRosterSuggestions && sugerenciasAlumnos.length > 0 && (
-                        <div className="absolute z-30 left-0 right-0 top-full mt-1 bg-white border border-amber-200 rounded-xl shadow-xl overflow-hidden max-h-60 overflow-y-auto">
-                          <div className="px-3 py-1.5 bg-amber-50 text-[10px] font-bold text-amber-900 border-b border-amber-100 flex items-center justify-between">
-                            <span>Sugerencias de la nómina oficial:</span>
-                            <button
-                              type="button"
-                              onClick={() => setShowRosterSuggestions(false)}
-                              className="text-slate-400 hover:text-slate-700"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          {sugerenciasAlumnos.map((alu) => (
-                            <button
-                              key={alu.id}
-                              type="button"
-                              onClick={() => seleccionarAlumnoDeNomina(alu)}
-                              className="w-full text-left px-3 py-2 text-xs hover:bg-amber-50/80 border-b border-slate-100 last:border-b-0 flex items-center justify-between gap-2 transition-colors cursor-pointer"
-                            >
-                              <div>
-                                <span className="font-bold text-slate-900">
-                                  {alu.apellido}, {alu.nombre}
-                                </span>
-                              </div>
-                              <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                                <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
-                                  {alu.grado}
-                                </span>
-                                <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">
-                                  {alu.turno}
-                                </span>
-                                <span className="px-1.5 py-0.5 rounded bg-sky-100 text-sky-800 font-medium">
-                                  {alu.division}
-                                </span>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
                     </div>
 
                     <div>
@@ -968,20 +934,12 @@ export default function PortalFamiliasModal({
                   </p>
                 </div>
 
-                {/* Watermark toggle */}
+                {/* Active info & Change data button */}
                 <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setShowWatermark(!showWatermark)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 border transition-all cursor-pointer ${
-                      showWatermark
-                        ? 'bg-amber-50 text-amber-900 border-amber-300'
-                        : 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                    }`}
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>{showWatermark ? 'Marca de agua: ACTIVADA' : 'Vista limpia HD: ACTIVADA'}</span>
-                  </button>
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-500/10 text-amber-900 border border-amber-300/80 text-[11px] font-bold">
+                    <Lock className="w-3.5 h-3.5 text-amber-700" />
+                    <span>Muestras protegidas con marca de agua</span>
+                  </span>
 
                   <button
                     onClick={() => setStep(1)}
@@ -1148,60 +1106,52 @@ export default function PortalFamiliasModal({
                       }`}
                     >
                       {/* Photo Container */}
-                      <div className="relative aspect-4/3 overflow-hidden bg-slate-100">
+                      <div 
+                        className="relative aspect-4/3 overflow-hidden bg-slate-100 select-none"
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
                         <img
                           src={foto.thumbnail}
                           alt={foto.titulo}
-                          className="w-full h-full object-cover object-center"
+                          draggable={false}
+                          className="w-full h-full object-cover object-center pointer-events-none select-none"
                         />
 
                         {/* Watermark overlay matching exact sample */}
                         <WatermarkOverlay visible={showWatermark} />
 
-                        {/* Status badge */}
-                        <div className="absolute top-2.5 left-2.5 flex gap-1.5">
-                          {isSelected ? (
-                            <span className="px-2.5 py-1 rounded-md bg-emerald-600 text-white text-[10px] font-bold flex items-center gap-1 shadow-sm">
-                              <Check className="w-3 h-3 stroke-[3]" />
-                              <span>
-                                {foto.categoria === 'grupal'
-                                  ? '✓ Foto 1 de 3 (Grupal)'
-                                  : foto.categoria === 'individual'
-                                  ? '✓ Foto 2 de 3 (Individual)'
-                                  : foto.categoria === 'docente'
-                                  ? '✓ Foto 3 de 3 (Con Seño)'
-                                  : '✓ Foto seleccionada'}
-                              </span>
+                        {/* Status badge: only show clean check badge when selected */}
+                        {isSelected && (
+                          <div className="absolute top-2.5 left-2.5 flex gap-1.5">
+                            <span className="px-2.5 py-1 rounded-md bg-amber-400 text-slate-950 text-[11px] font-extrabold flex items-center gap-1 shadow-md">
+                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                              <span>Seleccionada</span>
                             </span>
-                          ) : (
-                            <span className="px-2 py-0.5 rounded-md bg-slate-900/70 backdrop-blur-xs text-white text-[10px] font-medium">
-                              Toma disponible
-                            </span>
-                          )}
-                        </div>
+                          </div>
+                        )}
 
                         {/* Zoom button */}
                         <button
                           type="button"
                           onClick={() => setModalFotoPreview(foto)}
                           className="absolute bottom-2.5 right-2.5 p-1.5 rounded-lg bg-white/90 hover:bg-white text-slate-800 text-xs shadow-md transition-colors cursor-pointer"
-                          title="Ampliar foto con marca de agua"
+                          title="Ampliar foto"
                         >
                           <Eye className="w-4 h-4" />
                         </button>
                       </div>
 
                       {/* Card Details & Action */}
-                      <div className="p-3.5 flex flex-col justify-between flex-1 text-left space-y-3">
-                        <div>
-                          <h5 className="text-xs font-bold text-slate-900">{foto.titulo}</h5>
-                          <p className="text-[11px] text-slate-500 mt-0.5">{foto.descripcion}</p>
-                        </div>
+                      <div className="p-3 flex items-center justify-between gap-3 text-left">
+                        <h5 className="text-xs font-bold text-slate-900 truncate">{foto.titulo}</h5>
 
                         <button
                           type="button"
                           onClick={handleSelectThisFoto}
-                          className={`w-full py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                          className={`shrink-0 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                             isSelected
                               ? 'bg-amber-400 text-slate-950 shadow-xs'
                               : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
@@ -1210,10 +1160,10 @@ export default function PortalFamiliasModal({
                           {isSelected ? (
                             <>
                               <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
-                              <span>Seleccionada para el Kit</span>
+                              <span>Elegida</span>
                             </>
                           ) : (
-                            <span>Elegir esta toma</span>
+                            <span>Elegir</span>
                           )}
                         </button>
                       </div>
@@ -1329,6 +1279,186 @@ export default function PortalFamiliasModal({
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Copias Extras Impresas (Para Abuelos / Familiares) */}
+              <div className="bg-gradient-to-br from-amber-50/70 via-white to-amber-50/40 rounded-2xl p-5 border-2 border-amber-300/80 text-left space-y-4 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-200/70">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shadow-xs shrink-0">
+                      <Copy className="w-5 h-5 text-slate-950" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-slate-900 font-['Outfit']">
+                          ¿Querés solicitar copias extras de tus fotos impresas?
+                        </h4>
+                        <span className="text-[10px] font-bold bg-amber-200/70 text-amber-950 px-2 py-0.5 rounded-full">
+                          Abuelos & Familia
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        El sistema generará <strong>automáticamente el archivo duplicado necesario para el laboratorio fotográfico</strong> (con código de backprint), garantizando que salgan impresas y ensobradas sin errores ni omisiones.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-white border border-amber-300 rounded-lg text-[11px] font-bold text-amber-900 shrink-0 self-start sm:self-auto shadow-2xs">
+                    <Printer className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Revelado Minilab Químico</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Copia Extra 15x21 Retrato */}
+                  <div
+                    className={`p-4 rounded-xl border transition-all ${
+                      extraCopiaIndividual > 0
+                        ? 'bg-white border-amber-500 shadow-md ring-1 ring-amber-400'
+                        : 'bg-white/80 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">
+                            Copia Extra Retrato Individual (15x21 cm)
+                          </span>
+                          <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                            Papel Satinado 260g
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Fotografía individual suelta de tu hijo/a. Ideal para regalar a los abuelos (+ $3.800 c/u).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-900">
+                          {extraCopiaIndividual === 0
+                            ? '$3.800 ARS c/u'
+                            : `${extraCopiaIndividual} copia(s): +$${(
+                                extraCopiaIndividual * PRECIO_COPIA_EXTRA_15x21
+                              ).toLocaleString('es-AR')}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          id="btn-menos-copia-individual"
+                          onClick={() => setExtraCopiaIndividual(Math.max(0, extraCopiaIndividual - 1))}
+                          disabled={extraCopiaIndividual === 0}
+                          className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-700 font-bold transition-colors cursor-pointer"
+                          title="Restar una copia extra"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-7 text-center font-mono font-bold text-sm text-slate-900">
+                          {extraCopiaIndividual}
+                        </span>
+                        <button
+                          type="button"
+                          id="btn-mas-copia-individual"
+                          onClick={() => setExtraCopiaIndividual(extraCopiaIndividual + 1)}
+                          className="w-8 h-8 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                          title="Agregar una copia extra individual"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {extraCopiaIndividual > 0 && (
+                      <div className="mt-2.5 p-2 rounded-lg bg-amber-100/60 border border-amber-200 text-[10px] text-amber-950 flex items-start gap-1.5 font-mono">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Archivo duplicado en cola:</strong> Se generará{' '}
+                          <span className="font-bold underline text-amber-900">
+                            {codigoAcceso.trim() || '3ATT'}_{nombreAlumno.replace(/\s+/g, '_').toUpperCase() || 'ALUMNO'}_COPIA2.jpg
+                          </span>{' '}
+                          en la carpeta 15x21 para impresión directa del minilab.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Copia Extra 20x30 Foto Grupal */}
+                  <div
+                    className={`p-4 rounded-xl border transition-all ${
+                      extraCopiaGrupal > 0
+                        ? 'bg-white border-amber-500 shadow-md ring-1 ring-amber-400'
+                        : 'bg-white/80 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">
+                            Copia Extra Foto Grupal (20x30 cm)
+                          </span>
+                          <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                            Gran Formato
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Ampliación de recuerdo de todo el grupo/curso completo (+ $4.900 c/u).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-900">
+                          {extraCopiaGrupal === 0
+                            ? '$4.900 ARS c/u'
+                            : `${extraCopiaGrupal} copia(s): +$${(
+                                extraCopiaGrupal * PRECIO_COPIA_EXTRA_20x30
+                              ).toLocaleString('es-AR')}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          id="btn-menos-copia-grupal"
+                          onClick={() => setExtraCopiaGrupal(Math.max(0, extraCopiaGrupal - 1))}
+                          disabled={extraCopiaGrupal === 0}
+                          className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-700 font-bold transition-colors cursor-pointer"
+                          title="Restar una copia extra grupal"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-7 text-center font-mono font-bold text-sm text-slate-900">
+                          {extraCopiaGrupal}
+                        </span>
+                        <button
+                          type="button"
+                          id="btn-mas-copia-grupal"
+                          onClick={() => setExtraCopiaGrupal(extraCopiaGrupal + 1)}
+                          className="w-8 h-8 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                          title="Agregar una copia extra grupal"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {extraCopiaGrupal > 0 && (
+                      <div className="mt-2.5 p-2 rounded-lg bg-amber-100/60 border border-amber-200 text-[10px] text-amber-950 flex items-start gap-1.5 font-mono">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Archivo duplicado en cola:</strong> Se generará{' '}
+                          <span className="font-bold underline text-amber-900">
+                            {codigoAcceso.trim() || '3ATT'}_{nombreAlumno.replace(/\s+/g, '_').toUpperCase() || 'ALUMNO'}_COPIA2.jpg
+                          </span>{' '}
+                          en la carpeta 20x30 para impresión directa del minilab.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Optional Add-ons */}
@@ -1611,11 +1741,37 @@ export default function PortalFamiliasModal({
                           <span>$2.200</span>
                         </div>
                       )}
+                      {extraCopiaIndividual > 0 && (
+                        <div className="flex justify-between text-amber-300 font-semibold">
+                          <span>Copia extra Retrato 15x21 (x{extraCopiaIndividual})</span>
+                          <span>+${(extraCopiaIndividual * PRECIO_COPIA_EXTRA_15x21).toLocaleString('es-AR')}</span>
+                        </div>
+                      )}
+                      {extraCopiaGrupal > 0 && (
+                        <div className="flex justify-between text-amber-300 font-semibold">
+                          <span>Copia extra Grupal 20x30 (x{extraCopiaGrupal})</span>
+                          <span>+${(extraCopiaGrupal * PRECIO_COPIA_EXTRA_20x30).toLocaleString('es-AR')}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-emerald-400 font-medium">
                         <span>Descarga Digital HD</span>
                         <span>Incluida</span>
                       </div>
                     </div>
+
+                    {(extraCopiaIndividual > 0 || extraCopiaGrupal > 0) && (
+                      <div className="p-2.5 rounded-lg bg-amber-400/15 border border-amber-400/30 text-[11px] text-amber-200 flex items-start gap-2">
+                        <Printer className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-bold text-amber-300">
+                            Duplicado automático para laboratorio:
+                          </p>
+                          <p className="text-[10px] text-amber-200/90 mt-0.5">
+                            Se programarán {extraCopiaIndividual + extraCopiaGrupal} archivo(s) duplicado(s) rotulado(s) para que el minilab imprima ambos ejemplares sin riesgo de olvido.
+                          </p>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="pt-3 border-t border-slate-800 flex justify-between items-baseline">
                       <span className="text-xs font-bold text-slate-300">Total a Pagar:</span>
@@ -1710,6 +1866,28 @@ export default function PortalFamiliasModal({
                   </div>
                 </div>
 
+                {/* Extra Copies Confirmation Card if requested */}
+                {pedidoGenerado &&
+                  ((pedidoGenerado.copiasExtras?.individual15x21 || 0) > 0 ||
+                    (pedidoGenerado.copiasExtras?.grupal20x30 || 0) > 0) && (
+                    <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex items-start gap-3">
+                      <Copy className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                      <div className="text-xs">
+                        <p className="font-bold text-amber-950 flex items-center gap-1.5">
+                          <span>¡Copia(s) extra generada(s) con éxito para el laboratorio!</span>
+                          <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-1.5 py-0.5 rounded">
+                            Sin Omisiones
+                          </span>
+                        </p>
+                        <p className="text-amber-800 mt-0.5">
+                          El sistema creó automáticamente los archivos duplicados rotulados{' '}
+                          <code className="font-mono font-bold">_COPIA2.jpg</code> para el lote del minilab. El
+                          técnico revelará e incluirá ambos juegos dentro del sobre de tu hijo/a.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                 {/* Photo Lab File Renaming & Student Folder Information */}
                 {pedidoGenerado && (
                   <div className="p-3.5 rounded-xl bg-slate-900 text-white text-xs space-y-2">
@@ -1729,10 +1907,34 @@ export default function PortalFamiliasModal({
 
                     <div className="space-y-1 font-mono text-[10px] bg-slate-950/80 p-2.5 rounded-lg border border-slate-800">
                       {pedidoGenerado.archivosParaLaboratorio.map((archivo, idx) => (
-                        <div key={idx} className="flex items-center gap-1.5 text-slate-300 truncate">
-                          <FileCode className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          <span className="text-slate-400 capitalize">{archivo.tipo} ({archivo.tamanoImpresion}):</span>
-                          <span className="text-emerald-300 font-semibold truncate">{archivo.nombreArchivoLab}</span>
+                        <div
+                          key={idx}
+                          className={`flex items-center justify-between gap-1.5 p-1 rounded ${
+                            archivo.esCopiaExtra
+                              ? 'bg-amber-950/70 border border-amber-500/40 text-amber-300 font-bold'
+                              : 'text-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5 truncate">
+                            <FileCode
+                              className={`w-3.5 h-3.5 shrink-0 ${
+                                archivo.esCopiaExtra ? 'text-amber-400' : 'text-emerald-400'
+                              }`}
+                            />
+                            <span className="text-slate-400 capitalize">
+                              {archivo.tipo} ({archivo.tamanoImpresion}):
+                            </span>
+                            <span className={archivo.esCopiaExtra ? 'text-amber-200 truncate' : 'text-emerald-300 font-semibold truncate'}>
+                              {archivo.nombreArchivoLab}
+                            </span>
+                          </div>
+                          {archivo.esCopiaExtra ? (
+                            <span className="text-[9px] bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded font-black uppercase shrink-0">
+                              Copia Extra Duplicada
+                            </span>
+                          ) : (
+                            <span className="text-[9px] text-slate-500 uppercase shrink-0">Original</span>
+                          )}
                         </div>
                       ))}
                     </div>
@@ -1812,11 +2014,18 @@ export default function PortalFamiliasModal({
             onClick={(e) => e.stopPropagation()}
             className="relative max-w-3xl w-full bg-slate-900 rounded-3xl overflow-hidden p-3 text-white border border-slate-800"
           >
-            <div className="relative aspect-4/3 overflow-hidden rounded-2xl bg-black">
+            <div 
+              className="relative aspect-4/3 overflow-hidden rounded-2xl bg-black select-none"
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
+            >
               <img
                 src={modalFotoPreview.url}
                 alt={modalFotoPreview.titulo}
-                className="w-full h-full object-contain"
+                draggable={false}
+                className="w-full h-full object-contain pointer-events-none select-none"
               />
 
               {/* Watermark overlay matching exact sample */}
@@ -1826,129 +2035,10 @@ export default function PortalFamiliasModal({
             <div className="p-3 flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold text-white">{modalFotoPreview.titulo}</p>
-                <p className="text-[11px] text-slate-400">{modalFotoPreview.descripcion}</p>
               </div>
               <button
                 onClick={() => setModalFotoPreview(null)}
                 className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded-lg font-semibold"
-              >
-                Cerrar vista
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Modal Full Roster Selector */}
-      {showRosterModal && (
-        <div
-          onClick={() => setShowRosterModal(false)}
-          className="fixed inset-0 z-60 bg-slate-950/80 backdrop-blur-xs flex items-center justify-center p-3 sm:p-6"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] animate-in fade-in zoom-in-95 duration-150 text-left"
-          >
-            {/* Header */}
-            <div className="p-4 sm:p-5 bg-slate-900 text-white flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-                  <User className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-bold">Nómina Oficial de Alumnos</h3>
-                  <p className="text-[11px] text-slate-400">
-                    Seleccioná a tu hijo/a para autocompletar sala, turno y división
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowRosterModal(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Filter and Search Bar */}
-            <div className="p-4 border-b border-slate-100 bg-slate-50 space-y-3">
-              <div className="relative">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={rosterSearchModal}
-                  onChange={(e) => setRosterSearchModal(e.target.value)}
-                  placeholder="Buscar alumno/a por apellido o nombre..."
-                  className="w-full pl-9 pr-3 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-400"
-                />
-              </div>
-
-              {/* Sala Tabs */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                {[
-                  { id: 'todas', label: 'Todas las Salas' },
-                  { id: 'Sala 3', label: 'Sala 3 años' },
-                  { id: 'Sala 4', label: 'Sala 4 años' },
-                  { id: 'Sala 5', label: 'Sala 5 años' },
-                ].map((tab) => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setRosterFilterSala(tab.id)}
-                    className={`px-3 py-1 text-[11px] rounded-lg font-bold transition-all cursor-pointer ${
-                      rosterFilterSala === tab.id
-                        ? 'bg-amber-400 text-slate-950 shadow-xs'
-                        : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
-                    }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))}
-                <span className="text-[11px] text-slate-400 ml-auto">
-                  {alumnosParaModal.length} alumnos encontrados
-                </span>
-              </div>
-            </div>
-
-            {/* List */}
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-1.5 divide-y divide-slate-100">
-              {alumnosParaModal.length === 0 ? (
-                <div className="text-center py-10 text-slate-400 text-xs">
-                  No se encontraron alumnos con los filtros actuales.
-                </div>
-              ) : (
-                alumnosParaModal.map((alumno) => (
-                  <button
-                    key={alumno.id}
-                    onClick={() => seleccionarAlumnoDeNomina(alumno)}
-                    className="w-full text-left p-2.5 rounded-xl hover:bg-amber-50/70 border border-transparent hover:border-amber-200 flex items-center justify-between gap-3 transition-colors group cursor-pointer"
-                  >
-                    <div>
-                      <p className="text-xs font-bold text-slate-900 group-hover:text-amber-900">
-                        {alumno.apellido}, {alumno.nombre}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 flex-wrap text-[10px]">
-                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-semibold">
-                        {alumno.grado}
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-semibold">
-                        {alumno.turno}
-                      </span>
-                      <span className="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-semibold">
-                        {alumno.division}
-                      </span>
-                    </div>
-                  </button>
-                ))
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-              <span>Hacé clic en el nombre de tu alumno/a para seleccionarlo.</span>
-              <button
-                onClick={() => setShowRosterModal(false)}
-                className="px-4 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-lg font-semibold text-xs transition-colors"
               >
                 Cerrar
               </button>

@@ -1,15 +1,22 @@
-import { useState, type FormEvent } from 'react';
-import { Search, ShieldCheck, CheckCircle, ArrowRight, Sparkles, School, Eye, Lock } from 'lucide-react';
+import { useState, useEffect, type FormEvent } from 'react';
+import { Search, ShieldCheck, CheckCircle, ArrowRight, Sparkles, School, Eye, Lock, UserPlus, CheckCircle2, User } from 'lucide-react';
 import { COLEGIOS_EJEMPLO } from '../data/colegiosData';
+import { obtenerFamiliaActiva, InscripcionFamilia } from '../services/inscripcionesService';
 import WatermarkOverlay from './WatermarkOverlay';
 
 interface HeroProps {
   onOpenFamilias: (colegioId?: string, codigo?: string) => void;
+  onOpenInscripcion?: () => void;
 }
 
-export default function Hero({ onOpenFamilias }: HeroProps) {
+export default function Hero({ onOpenFamilias, onOpenInscripcion }: HeroProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [showWatermark, setShowWatermark] = useState(true);
+  const [familiaActiva, setFamiliaActiva] = useState<InscripcionFamilia | null>(null);
+
+  useEffect(() => {
+    setFamiliaActiva(obtenerFamiliaActiva());
+  }, []);
 
   const filteredColegios = COLEGIOS_EJEMPLO.filter(
     (c) =>
@@ -54,8 +61,85 @@ export default function Hero({ onOpenFamilias }: HeroProps) {
             </h1>
 
             <p className="text-lg sm:text-xl text-slate-600 leading-relaxed max-w-2xl font-normal">
-              Retratos escolares con luz natural y calidez. Ingresá con el código de tu curso, elegí las 3 tomas favoritas de tu hijo/a (grupal, individual y con la docente) y recibí la descarga HD o el kit impreso en carpeta.
+              Retratos escolares con luz natural y calidez. Inscribite con tus datos de contacto y los de tu hijo/a para acceder a la galería fotográfica de su curso.
             </p>
+
+            {/* Inscription First Card */}
+            {familiaActiva ? (
+              <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/15 to-emerald-500/10 border-2 border-amber-400/60 rounded-2xl p-4 sm:p-5 max-w-2xl shadow-lg shadow-amber-400/10 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100/90 px-2.5 py-0.5 rounded-full">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        Inscripción Activa
+                      </span>
+                      <span className="text-xs text-slate-500">Ciclo 2026</span>
+                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                      ¡Hola, {familiaActiva.padreNombre}!
+                    </h3>
+                    <p className="text-xs text-slate-600">
+                      Alumno/a: <strong className="text-slate-900">{familiaActiva.alumnoNombre} {familiaActiva.alumnoApellido}</strong> · {familiaActiva.grado} {familiaActiva.division} ({familiaActiva.turno})
+                    </p>
+                  </div>
+                  <div className="flex flex-col sm:flex-row gap-2 shrink-0">
+                    <button
+                      id="btn-ver-fotos-alumno-activo"
+                      onClick={() => onOpenFamilias(familiaActiva.colegioId)}
+                      className="px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-xs shadow-amber-400/30 flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
+                    >
+                      <span>Ver fotos de {familiaActiva.alumnoNombre}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                    {onOpenInscripcion && (
+                      <button
+                        onClick={onOpenInscripcion}
+                        className="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs rounded-xl border border-slate-200 transition-colors"
+                      >
+                        Cambiar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-amber-50/80 border-2 border-amber-300/80 rounded-2xl p-4 sm:p-5 max-w-2xl shadow-lg shadow-amber-400/10 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5">
+                  <div className="space-y-1">
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-900 bg-amber-200/80 px-2.5 py-0.5 rounded-md">
+                      <UserPlus className="w-3.5 h-3.5 text-amber-800" />
+                      Primer Paso para Familias
+                    </span>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900">
+                      ¿Sos padre o madre de un alumno?
+                    </h3>
+                    <p className="text-xs text-slate-600">
+                      Inscribite con tu número de WhatsApp y los datos de tu hijo/a (grado, turno y división) para acceder a las fotos.
+                    </p>
+                  </div>
+                  {onOpenInscripcion && (
+                    <div className="flex flex-col gap-1.5 shrink-0">
+                      <button
+                        id="btn-inscribirme-hero"
+                        onClick={onOpenInscripcion}
+                        className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm rounded-xl transition-all shadow-md shadow-amber-400/40 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                      >
+                        <UserPlus className="w-4 h-4" />
+                        <span>Inscribirme / Crear usuario</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={onOpenInscripcion}
+                        className="text-[11px] text-center text-amber-800 hover:text-amber-900 underline font-medium cursor-pointer"
+                      >
+                        ¿Ya te inscribiste? Ingresar aquí
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* School Search Box */}
             <div className="bg-white p-2.5 sm:p-3 rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-200/90 max-w-2xl">
@@ -129,11 +213,18 @@ export default function Hero({ onOpenFamilias }: HeroProps) {
           <div className="lg:col-span-5">
             <div className="relative mx-auto max-w-md bg-white rounded-3xl p-4 sm:p-5 shadow-2xl shadow-slate-200/80 border border-slate-200/80">
               {/* Photo Card with Watermark Simulator */}
-              <div className="relative aspect-4/5 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-inner group">
+              <div 
+                className="relative aspect-4/5 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200/80 shadow-inner group select-none"
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
                 <img
                   src="https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1000&q=85"
                   alt="Muestra de fotografía escolar con guardapolvo"
-                  className="w-full h-full object-cover object-center transform group-hover:scale-102 transition-transform duration-500"
+                  draggable={false}
+                  className="w-full h-full object-cover object-center transform group-hover:scale-102 transition-transform duration-500 pointer-events-none select-none"
                 />
 
                 {/* Simulated Watermark Overlay matching exact sample style */}

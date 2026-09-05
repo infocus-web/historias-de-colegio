@@ -17,8 +17,8 @@ export default function Footer({ onOpenFamilias, onScrollTo, onOpenAdmin }: Foot
               <div className="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold">
                 <Camera className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <span className="text-xl font-bold tracking-tight font-['Outfit']">
-                INFOCUS<span className="text-amber-400">SCHOOLS</span>
+              <span className="text-xl font-bold tracking-tight font-['Outfit'] lowercase">
+                in<span className="text-amber-400">focus</span>
               </span>
             </div>
 

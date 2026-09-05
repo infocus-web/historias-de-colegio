@@ -1,13 +1,19 @@
 import { useState } from 'react';
-import { Camera, Search, Menu, X, PhoneCall, Lock, Sparkles } from 'lucide-react';
+import { Camera, Search, Menu, X, PhoneCall, Lock, Sparkles, UserPlus } from 'lucide-react';
 
 interface HeaderProps {
   onOpenFamilias: (colegioId?: string) => void;
   onScrollTo: (id: string) => void;
   onOpenAdmin?: () => void;
+  onOpenInscripcion?: () => void;
 }
 
-export default function Header({ onOpenFamilias, onScrollTo, onOpenAdmin }: HeaderProps) {
+export default function Header({
+  onOpenFamilias,
+  onScrollTo,
+  onOpenAdmin,
+  onOpenInscripcion,
+}: HeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavClick = (id: string) => {
@@ -25,10 +31,6 @@ export default function Header({ onOpenFamilias, onScrollTo, onOpenAdmin }: Head
             <span>Portal de Familias · Ciclo Escolar 2026 activo</span>
           </div>
           <div className="flex items-center gap-4 text-slate-300">
-            <span className="flex items-center gap-1.5 hover:text-white transition-colors cursor-pointer" onClick={() => onScrollTo('cobertura')}>
-              <span className="text-amber-400 font-medium">0 Sobres · 100% Digital y Seguro</span>
-            </span>
-            <span className="text-slate-600">|</span>
             {onOpenAdmin && (
               <>
                 <button
@@ -42,7 +44,7 @@ export default function Header({ onOpenFamilias, onScrollTo, onOpenAdmin }: Head
               </>
             )}
             <a
-              href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a"
+              href="https://wa.me/5491128625916?text=Hola%20infocus,%20quisiera%20hacer%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors"
@@ -68,8 +70,8 @@ export default function Header({ onOpenFamilias, onScrollTo, onOpenAdmin }: Head
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-bold tracking-tight text-slate-900 font-['Outfit']">
-                  INFOCUS<span className="text-amber-600">SCHOOLS</span>
+                <span className="text-xl font-bold tracking-tight text-slate-900 font-['Outfit'] lowercase">
+                  in<span className="text-amber-600">focus</span>
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
                   Familias
@@ -114,31 +116,51 @@ export default function Header({ onOpenFamilias, onScrollTo, onOpenAdmin }: Head
           </nav>
 
           {/* Desktop Actions */}
-          <div className="hidden sm:flex items-center gap-3">
+          <div className="hidden sm:flex items-center gap-2.5">
+            {onOpenInscripcion && (
+              <button
+                id="btn-inscribirme-header"
+                onClick={onOpenInscripcion}
+                className="px-4 py-2.5 text-xs font-extrabold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-xs shadow-amber-400/30 transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Inscribirme</span>
+              </button>
+            )}
             <button
               id="btn-acceso-familias-header"
               onClick={() => onOpenFamilias()}
-              className="px-5 py-2.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-xl shadow-sm shadow-amber-400/30 transition-all flex items-center gap-2 cursor-pointer active:scale-98"
+              className="px-4 py-2.5 text-xs font-bold text-slate-700 hover:text-slate-950 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer active:scale-98"
             >
-              <Search className="w-4 h-4" />
+              <Search className="w-4 h-4 text-slate-500" />
               <span>Acceder a las Fotos</span>
             </button>
           </div>
 
-          {/* Mobile hamburger */}
-          <div className="flex md:hidden items-center gap-2">
+          {/* Mobile hamburger & quick actions */}
+          <div className="flex md:hidden items-center gap-1.5">
+            {onOpenInscripcion && (
+              <button
+                id="btn-inscribirme-mobile"
+                onClick={onOpenInscripcion}
+                className="px-2.5 py-1.5 text-xs font-extrabold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-lg shadow-xs flex items-center gap-1 cursor-pointer"
+              >
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Inscribirme</span>
+              </button>
+            )}
             <button
               id="btn-acceso-familias-mobile"
               onClick={() => onOpenFamilias()}
-              className="px-3 py-1.5 text-xs font-bold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-lg shadow-xs flex items-center gap-1.5"
+              className="px-2.5 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg shadow-xs flex items-center gap-1"
             >
-              <Search className="w-3.5 h-3.5" />
-              <span>Ver Fotos</span>
+              <Search className="w-3.5 h-3.5 text-slate-500" />
+              <span>Fotos</span>
             </button>
             <button
               id="btn-toggle-menu"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
+              className="p-1.5 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100 transition-colors"
               aria-label="Abrir menú"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -177,15 +199,27 @@ export default function Header({ onOpenFamilias, onScrollTo, onOpenAdmin }: Head
             </button>
           </nav>
           <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+            {onOpenInscripcion && (
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenInscripcion();
+                }}
+                className="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-extrabold text-sm rounded-lg text-center flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Inscribirme (Crear usuario)</span>
+              </button>
+            )}
             <button
               onClick={() => {
                 setMobileMenuOpen(false);
                 onOpenFamilias();
               }}
-              className="w-full py-2.5 px-4 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm rounded-lg text-center flex items-center justify-center gap-2"
+              className="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-sm rounded-lg text-center flex items-center justify-center gap-2"
             >
-              <Search className="w-4 h-4" />
-              <span>Acceder a las Fotos de mis Hijos</span>
+              <Search className="w-4 h-4 text-slate-500" />
+              <span>Acceder a las Fotos</span>
             </button>
             {onOpenAdmin && (
               <button

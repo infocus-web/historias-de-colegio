@@ -5,10 +5,17 @@ export interface ArchivoFotoLab {
   id: string;
   tipo: 'individual' | 'grupal' | 'docente' | 'stickers' | 'portarretrato';
   nombreArchivoOriginal: string;
-  nombreArchivoLab: string; // Ej: SALA3TM_01_ABBA_FAZIO_AGUSTIN_INDIVIDUAL_15x21.jpg
+  nombreArchivoLab: string; // Ej: 3ATT_FABRICIO_PEREZ.jpg o 3ATT_FABRICIO_PEREZ_COPIA2.jpg
   tamanoImpresion: string; // '15x21' | '20x30' | '10x15'
   urlMuestra: string;
   urlOriginalHD?: string;
+  esCopiaExtra?: boolean;
+  numeroCopia?: number; // 1 = original, 2 = copia extra, etc.
+}
+
+export interface CopiasExtrasConfig {
+  individual15x21: number;
+  grupal20x30: number;
 }
 
 export interface PedidoEscolarCompleto {
@@ -38,6 +45,7 @@ export interface PedidoEscolarCompleto {
     grupalId: string;
     docenteId?: string;
   };
+  copiasExtras?: CopiasExtrasConfig;
   archivosParaLaboratorio: ArchivoFotoLab[];
   linkDescargaHD: string;
   emailEnviado: boolean;
@@ -88,9 +96,18 @@ export function generarNombreArchivoLab(
   _numeroLista: number,
   alumnoNombre: string,
   tipoFoto?: 'INDIVIDUAL' | 'GRUPAL' | 'DOCENTE' | 'STICKERS',
-  _tamano?: '15x21' | '20x30' | '10x15'
+  _tamano?: '15x21' | '20x30' | '10x15',
+  esCopiaExtra?: boolean,
+  numeroCopia?: number
 ): string {
   const codigoCliente = formatearCodigoCliente(cursoCodigo, alumnoNombre);
+  if (esCopiaExtra) {
+    const sufijoCopia = numeroCopia && numeroCopia > 1 ? `_COPIA${numeroCopia}` : '_COPIA2';
+    if (tipoFoto === 'DOCENTE') {
+      return `${codigoCliente}_DOCENTE${sufijoCopia}.jpg`;
+    }
+    return `${codigoCliente}${sufijoCopia}.jpg`;
+  }
   if (tipoFoto === 'DOCENTE') {
     return `${codigoCliente}_DOCENTE.jpg`;
   }
@@ -117,13 +134,17 @@ const PEDIDOS_INICIALES: PedidoEscolarCompleto[] = [
     tutorEmail: 'lorena.perez@gmail.com',
     kitId: 'kit-impreso-digital',
     kitNombre: 'Kit Impreso + Digital',
-    total: 30000,
+    total: 33800,
     metodoPago: 'mercadopago',
     estadoPago: 'aprobado',
     estadoEntrega: 'en_laboratorio',
     fotosSeleccionadas: {
       individualId: 'f-ind-1',
       grupalId: 'f-grup-1'
+    },
+    copiasExtras: {
+      individual15x21: 1,
+      grupal20x30: 0
     },
     archivosParaLaboratorio: [
       {
@@ -133,7 +154,19 @@ const PEDIDOS_INICIALES: PedidoEscolarCompleto[] = [
         nombreArchivoLab: '3ATT_FABRICIO_PEREZ.jpg',
         tamanoImpresion: '15x21',
         urlMuestra: FOTOS_MUESTRA[0].thumbnail,
-        urlOriginalHD: FOTOS_MUESTRA[0].url
+        urlOriginalHD: FOTOS_MUESTRA[0].url,
+        numeroCopia: 1
+      },
+      {
+        id: 'arch-fab-1-dup',
+        tipo: 'individual',
+        nombreArchivoOriginal: 'IMG_4901_HD.jpg',
+        nombreArchivoLab: '3ATT_FABRICIO_PEREZ_COPIA2.jpg',
+        tamanoImpresion: '15x21',
+        urlMuestra: FOTOS_MUESTRA[0].thumbnail,
+        urlOriginalHD: FOTOS_MUESTRA[0].url,
+        esCopiaExtra: true,
+        numeroCopia: 2
       },
       {
         id: 'arch-fab-2',
@@ -142,7 +175,8 @@ const PEDIDOS_INICIALES: PedidoEscolarCompleto[] = [
         nombreArchivoLab: '3ATT_FABRICIO_PEREZ.jpg',
         tamanoImpresion: '20x30',
         urlMuestra: FOTOS_MUESTRA[3].thumbnail,
-        urlOriginalHD: FOTOS_MUESTRA[3].url
+        urlOriginalHD: FOTOS_MUESTRA[3].url,
+        numeroCopia: 1
       }
     ],
     linkDescargaHD: 'https://ntkqypxvrljuihbxdrtx.supabase.co/storage/v1/object/public/fotos-hd/2026/3ATT/3ATT_FABRICIO_PEREZ.zip',
@@ -370,6 +404,7 @@ export function registrarPedidoDesdePortal(params: {
     grupalId: string;
     docenteId?: string;
   };
+  copiasExtras?: CopiasExtrasConfig;
 }): PedidoEscolarCompleto {
   const currentPedidos = obtenerPedidosGuardados();
   const numPedido = `IFS-2026-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -388,7 +423,8 @@ export function registrarPedidoDesdePortal(params: {
       nombreArchivoLab: generarNombreArchivoLab(params.cursoCodigo, numLista, params.alumnoNombre, 'INDIVIDUAL', '15x21'),
       tamanoImpresion: '15x21',
       urlMuestra: individualFoto.thumbnail,
-      urlOriginalHD: individualFoto.url
+      urlOriginalHD: individualFoto.url,
+      numeroCopia: 1
     },
     {
       id: `arch-${Date.now()}-2`,
@@ -397,7 +433,8 @@ export function registrarPedidoDesdePortal(params: {
       nombreArchivoLab: generarNombreArchivoLab(params.cursoCodigo, numLista, params.alumnoNombre, 'GRUPAL', '20x30'),
       tamanoImpresion: '20x30',
       urlMuestra: grupalFoto.thumbnail,
-      urlOriginalHD: grupalFoto.url
+      urlOriginalHD: grupalFoto.url,
+      numeroCopia: 1
     }
   ];
 
@@ -409,8 +446,61 @@ export function registrarPedidoDesdePortal(params: {
       nombreArchivoLab: generarNombreArchivoLab(params.cursoCodigo, numLista, params.alumnoNombre, 'DOCENTE', '15x21'),
       tamanoImpresion: '15x21',
       urlMuestra: docenteFoto.thumbnail,
-      urlOriginalHD: docenteFoto.url
+      urlOriginalHD: docenteFoto.url,
+      numeroCopia: 1
     });
+  }
+
+  // Generación automática de archivos duplicados para el laboratorio (Copia Extra 15x21)
+  if (params.copiasExtras?.individual15x21 && params.copiasExtras.individual15x21 > 0) {
+    for (let c = 1; c <= params.copiasExtras.individual15x21; c++) {
+      const numCopia = c + 1;
+      archivosLab.push({
+        id: `arch-${Date.now()}-extra-ind-${c}`,
+        tipo: 'individual',
+        nombreArchivoOriginal: 'INDIVIDUAL_HD.jpg',
+        nombreArchivoLab: generarNombreArchivoLab(
+          params.cursoCodigo,
+          numLista,
+          params.alumnoNombre,
+          'INDIVIDUAL',
+          '15x21',
+          true,
+          numCopia
+        ),
+        tamanoImpresion: '15x21',
+        urlMuestra: individualFoto.thumbnail,
+        urlOriginalHD: individualFoto.url,
+        esCopiaExtra: true,
+        numeroCopia: numCopia
+      });
+    }
+  }
+
+  // Generación automática de archivos duplicados para el laboratorio (Copia Extra 20x30)
+  if (params.copiasExtras?.grupal20x30 && params.copiasExtras.grupal20x30 > 0) {
+    for (let c = 1; c <= params.copiasExtras.grupal20x30; c++) {
+      const numCopia = c + 1;
+      archivosLab.push({
+        id: `arch-${Date.now()}-extra-grup-${c}`,
+        tipo: 'grupal',
+        nombreArchivoOriginal: 'GRUPAL_HD.jpg',
+        nombreArchivoLab: generarNombreArchivoLab(
+          params.cursoCodigo,
+          numLista,
+          params.alumnoNombre,
+          'GRUPAL',
+          '20x30',
+          true,
+          numCopia
+        ),
+        tamanoImpresion: '20x30',
+        urlMuestra: grupalFoto.thumbnail,
+        urlOriginalHD: grupalFoto.url,
+        esCopiaExtra: true,
+        numeroCopia: numCopia
+      });
+    }
   }
 
   const now = new Date();
@@ -438,6 +528,7 @@ export function registrarPedidoDesdePortal(params: {
     estadoPago: 'aprobado',
     estadoEntrega: 'en_laboratorio',
     fotosSeleccionadas: params.fotosSeleccionadas,
+    copiasExtras: params.copiasExtras,
     archivosParaLaboratorio: archivosLab,
     linkDescargaHD: `https://ntkqypxvrljuihbxdrtx.supabase.co/storage/v1/object/public/fotos-hd/2026/${sanitizarParaMinilab(params.cursoCodigo)}/${codigoAlumno}.zip`,
     emailEnviado: true,
@@ -456,7 +547,9 @@ export function registrarPedidoDesdePortal(params: {
 async function generarJpgSimuladoLaboratorio(
   codigoCliente: string,
   tamano: string,
-  tipo: string
+  tipo: string,
+  esCopiaExtra?: boolean,
+  numeroCopia?: number
 ): Promise<Blob> {
   if (typeof document === 'undefined') {
     return new Blob([], { type: 'image/jpeg' });
@@ -470,26 +563,47 @@ async function generarJpgSimuladoLaboratorio(
   if (ctx) {
     // Fondo profesional para laboratorio
     const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-    grad.addColorStop(0, '#f8fafc');
-    grad.addColorStop(1, '#e2e8f0');
+    if (esCopiaExtra) {
+      grad.addColorStop(0, '#fffbeb');
+      grad.addColorStop(1, '#fef3c7');
+    } else {
+      grad.addColorStop(0, '#f8fafc');
+      grad.addColorStop(1, '#e2e8f0');
+    }
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Marco
-    ctx.strokeStyle = '#cbd5e1';
-    ctx.lineWidth = 14;
+    ctx.strokeStyle = esCopiaExtra ? '#f59e0b' : '#cbd5e1';
+    ctx.lineWidth = esCopiaExtra ? 18 : 14;
     ctx.strokeRect(18, 18, canvas.width - 36, canvas.height - 36);
 
     // Encabezado
-    ctx.fillStyle = '#f59e0b';
-    ctx.font = 'bold 26px sans-serif';
+    ctx.fillStyle = '#d97706';
+    ctx.font = 'bold 24px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('INFOCUS SCHOOLS · FOTOGRAFÍA ESCOLAR 2026', canvas.width / 2, 70);
+    ctx.fillText('INFOCUS SCHOOLS · FOTOGRAFÍA ESCOLAR 2026', canvas.width / 2, 65);
+
+    if (esCopiaExtra) {
+      // Badge destacado de copia extra
+      ctx.fillStyle = '#b45309';
+      ctx.fillRect(canvas.width / 2 - 260, 90, 520, 42);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText(`★ COPIA EXTRA DUPLICADA (COPIA N° ${numeroCopia || 2}) ★`, canvas.width / 2, 118);
+
+      ctx.fillStyle = '#92400e';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.fillText('SOLICITADA POR FAMILIARES · NO OMITIR EN EL ENSOBRADO', canvas.width / 2, 160);
+    }
 
     // Código de cliente destacado para el operador
     ctx.fillStyle = '#0f172a';
-    ctx.font = 'bold 44px monospace';
-    ctx.fillText(codigoCliente, canvas.width / 2, canvas.height / 2 - 20);
+    ctx.font = 'bold 42px monospace';
+    const textoCodigo = esCopiaExtra 
+      ? `${codigoCliente}_COPIA${numeroCopia || 2}` 
+      : codigoCliente;
+    ctx.fillText(textoCodigo, canvas.width / 2, canvas.height / 2 - 20);
 
     // Medida y tipo
     ctx.fillStyle = '#475569';
@@ -498,7 +612,7 @@ async function generarJpgSimuladoLaboratorio(
 
     ctx.fillStyle = '#94a3b8';
     ctx.font = '16px monospace';
-    ctx.fillText(`Archivo: ${codigoCliente}.jpg`, canvas.width / 2, canvas.height - 60);
+    ctx.fillText(`Archivo para Minilab: ${textoCodigo}.jpg`, canvas.width / 2, canvas.height - 60);
   }
 
   return new Promise<Blob>((resolve) => {
@@ -562,11 +676,11 @@ export async function descargarLoteLaboratorioZip(
         const targetFolder = es20x30 ? folder20x30 : folder15x21;
         const setNombres = es20x30 ? nombresUsados20x30 : nombresUsados15x21;
 
-        // Nombre de archivo con el código de cliente (ej: 3ATT_FABRICIO_PEREZ.jpg)
-        let nombreJpg = `${codigoCliente}.jpg`;
-        
-        // Si el alumno ya tiene un archivo en esa misma medida (ej: docente adicional en 15x21)
-        if (setNombres.has(nombreJpg)) {
+        // Nombre de archivo con el código de cliente (ej: 3ATT_FABRICIO_PEREZ.jpg o 3ATT_FABRICIO_PEREZ_COPIA2.jpg)
+        let nombreJpg = foto.nombreArchivoLab || `${codigoCliente}.jpg`;
+        if (foto.esCopiaExtra) {
+          nombreJpg = `${codigoCliente}_COPIA${foto.numeroCopia || 2}.jpg`;
+        } else if (setNombres.has(nombreJpg)) {
           nombreJpg = `${codigoCliente}_${sanitizarParaMinilab(foto.tipo)}.jpg`;
         }
         if (setNombres.has(nombreJpg)) {
@@ -577,7 +691,7 @@ export async function descargarLoteLaboratorioZip(
           nombreJpg = `${codigoCliente}_${seq}.jpg`;
         }
         setNombres.add(nombreJpg);
-        listaArchivosLab.push(`${foto.tamanoImpresion}/${nombreJpg}`);
+        listaArchivosLab.push(`${foto.tamanoImpresion}/${nombreJpg}${foto.esCopiaExtra ? ' [COPIA EXTRA]' : ''}`);
 
         // Descarga la imagen o genera JPEG válido nativo si hay restricción de CORS
         try {
@@ -589,13 +703,17 @@ export async function descargarLoteLaboratorioZip(
           const fallbackBlob = await generarJpgSimuladoLaboratorio(
             codigoCliente,
             foto.tamanoImpresion,
-            foto.tipo
+            foto.tipo,
+            foto.esCopiaExtra,
+            foto.numeroCopia
           );
           targetFolder?.file(nombreJpg, fallbackBlob);
         }
       }
 
-      planillaTexto += `#${String(p.alumnoNumeroLista).padStart(2, '0')} | ${p.cursoCodigo} | ${p.alumnoNombre} | ${codigoCliente} | ${p.kitNombre} | ${listaArchivosLab.join(' + ')}\n`;
+      const tieneCopiasExtras = p.archivosParaLaboratorio.some(a => a.esCopiaExtra) || (p.copiasExtras && (p.copiasExtras.individual15x21 > 0 || p.copiasExtras.grupal20x30 > 0));
+      const alertaExtra = tieneCopiasExtras ? ' ⚠️ [INCLUYE COPIA EXTRA DUPLICADA]' : '';
+      planillaTexto += `#${String(p.alumnoNumeroLista).padStart(2, '0')} | ${p.cursoCodigo} | ${p.alumnoNombre} | ${codigoCliente} | ${p.kitNombre}${alertaExtra} | ${listaArchivosLab.join(' + ')}\n`;
     }
   } else {
     // Estructura opcional alternativa: subcarpeta por cada alumno
@@ -605,7 +723,8 @@ export async function descargarLoteLaboratorioZip(
       const carpetaAlumno = `${p.cursoCodigo}/${String(p.alumnoNumeroLista).padStart(2, '0')}_${sanitizarParaMinilab(p.alumnoNombre)}`;
 
       for (const foto of p.archivosParaLaboratorio) {
-        const nombreJpg = `${codigoCliente}_${foto.tamanoImpresion}.jpg`;
+        const sufijoExtra = foto.esCopiaExtra ? `_COPIA${foto.numeroCopia || 2}` : '';
+        const nombreJpg = `${codigoCliente}_${foto.tamanoImpresion}${sufijoExtra}.jpg`;
         try {
           const response = await fetch(foto.urlOriginalHD || foto.urlMuestra);
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -615,13 +734,17 @@ export async function descargarLoteLaboratorioZip(
           const fallbackBlob = await generarJpgSimuladoLaboratorio(
             codigoCliente,
             foto.tamanoImpresion,
-            foto.tipo
+            foto.tipo,
+            foto.esCopiaExtra,
+            foto.numeroCopia
           );
           zip.folder(carpetaAlumno)?.file(nombreJpg, fallbackBlob);
         }
       }
 
-      planillaTexto += `#${String(p.alumnoNumeroLista).padStart(2, '0')} | ${p.cursoCodigo} | ${p.alumnoNombre} | ${codigoCliente} | ${p.kitNombre}\n`;
+      const tieneCopiasExtras = p.archivosParaLaboratorio.some(a => a.esCopiaExtra) || (p.copiasExtras && (p.copiasExtras.individual15x21 > 0 || p.copiasExtras.grupal20x30 > 0));
+      const alertaExtra = tieneCopiasExtras ? ' ⚠️ [INCLUYE COPIA EXTRA DUPLICADA]' : '';
+      planillaTexto += `#${String(p.alumnoNumeroLista).padStart(2, '0')} | ${p.cursoCodigo} | ${p.alumnoNombre} | ${codigoCliente} | ${p.kitNombre}${alertaExtra}\n`;
     }
   }
 
@@ -634,11 +757,14 @@ export async function descargarLoteLaboratorioZip(
    - "15x21": Contiene las fotos individuales y ampliaciones 15x21 sueltas.
    - "20x30": Contiene las fotos grupales 20x30 sueltas.
 2. Cada archivo JPG tiene como nombre el CÓDIGO DE CLIENTE del alumno (ej: 3ATT_FABRICIO_PEREZ.jpg).
-3. Por favor asegurar que la máquina (Noritsu / Fuji Frontier / Klick) tenga activada la opción:
+3. ATENCIÓN A COPIAS EXTRAS DUPLICADAS:
+   Los archivos con sufijo "_COPIA2.jpg", "_COPIA3.jpg" corresponden a fotos duplicadas solicitadas y abonadas por los padres.
+   El minilab imprimirá ambos archivos automáticamente. Ambos ejemplares deben guardarse juntos dentro del mismo sobre del alumno para evitar omisiones.
+4. Por favor asegurar que la máquina (Noritsu / Fuji Frontier / Klick) tenga activada la opción:
    "IMPRIMIR NOMBRE DE ARCHIVO EN EL DORSO DEL PAPEL (Backprint)".
-4. De este modo, tanto la copia 15x21 como la copia 20x30 tendrán estampado en el reverso:
-   "3ATT_FABRICIO_PEREZ"
-5. En la mesa de ensobrado, basta con hacer coincidir ambos dorsos para colocarlos en el sobre del alumno.
+5. De este modo, tanto la copia original como la copia extra tendrán estampado en el reverso:
+   "3ATT_FABRICIO_PEREZ" y "3ATT_FABRICIO_PEREZ_COPIA2"
+6. En la mesa de ensobrado, basta con hacer coincidir ambos dorsos para colocarlos en el sobre del alumno.
 Muchas gracias. InFocus Fotografía Escolar.`;
 
   zip.file(`00_LEAME_OPERADOR_LABORATORIO.txt`, readmeLab);

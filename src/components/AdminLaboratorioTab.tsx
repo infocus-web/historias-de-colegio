@@ -147,8 +147,9 @@ export default function AdminLaboratorioTab({
     return pedidosFiltrados.map((p, idx) => {
       const codigoCliente = p.codigoAlumno || formatearCodigoCliente(p.cursoCodigo, p.alumnoNombre);
       const listaArchivos = p.archivosParaLaboratorio && p.archivosParaLaboratorio.length > 0
-        ? p.archivosParaLaboratorio.map(a => `${a.tamanoImpresion}: ${a.nombreArchivoLab}`).join(' | ')
+        ? p.archivosParaLaboratorio.map(a => `${a.tamanoImpresion}: ${a.nombreArchivoLab}${a.esCopiaExtra ? ' (COPIA EXTRA)' : ''}`).join(' | ')
         : '15x21 + 20x30';
+      const tieneCopiasExtras = p.archivosParaLaboratorio.some(a => a.esCopiaExtra);
 
       return {
         'N°': idx + 1,
@@ -162,7 +163,7 @@ export default function AdminLaboratorioTab({
         'Tutor Responsable': p.tutorNombre,
         'Teléfono': p.tutorTelefono,
         'Email': p.tutorEmail,
-        'Kit Contratado': p.kitNombre,
+        'Kit Contratado': p.kitNombre + (tieneCopiasExtras ? ' (+ COPIA EXTRA)' : ''),
         'Cantidad Fotos': p.archivosParaLaboratorio?.length || 2,
         'Archivos a Imprimir': listaArchivos,
         'Estado Pago': p.estadoPago.toUpperCase(),
@@ -570,9 +571,16 @@ export default function AdminLaboratorioTab({
                                     )}
                                   </span>
                                 </div>
-                                <span className="text-[10px] uppercase font-bold text-slate-500 shrink-0 bg-white px-1.5 py-0.5 rounded border border-slate-200">
-                                  {archivo.tamanoImpresion}
-                                </span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {archivo.esCopiaExtra && (
+                                    <span className="text-[9px] uppercase font-extrabold bg-amber-400 text-slate-950 px-1.5 py-0.5 rounded shadow-2xs">
+                                      COPIA {archivo.numeroCopia || 2}
+                                    </span>
+                                  )}
+                                  <span className="text-[10px] uppercase font-bold text-slate-500 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                    {archivo.tamanoImpresion}
+                                  </span>
+                                </div>
                               </button>
                             );
                           })}

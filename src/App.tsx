@@ -1,18 +1,20 @@
 import { useState } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
-import TrustStats from './components/TrustStats';
 import ProcesoSection from './components/ProcesoSection';
 import MuestrarioSection from './components/MuestrarioSection';
 import FaqSection from './components/FaqSection';
 import ContactoSection from './components/ContactoSection';
 import Footer from './components/Footer';
 import PortalFamiliasModal from './components/PortalFamiliasModal';
+import ModalInscripcionFamilia from './components/ModalInscripcionFamilia';
 import WhatsAppFloating from './components/WhatsAppFloating';
 import AdminModal from './components/AdminModal';
+import { InscripcionFamilia } from './services/inscripcionesService';
 
 export default function App() {
   const [familiasModalOpen, setFamiliasModalOpen] = useState(false);
+  const [inscripcionModalOpen, setInscripcionModalOpen] = useState(false);
   const [selectedColegioId, setSelectedColegioId] = useState<string | undefined>(undefined);
   const [selectedKitId, setSelectedKitId] = useState<string | undefined>(undefined);
   const [selectedCodigo, setSelectedCodigo] = useState<string | undefined>(undefined);
@@ -21,6 +23,18 @@ export default function App() {
   const handleOpenFamilias = (colegioId?: string, codigo?: string) => {
     setSelectedColegioId(colegioId);
     setSelectedCodigo(codigo);
+    setFamiliasModalOpen(true);
+  };
+
+  const handleOpenInscripcion = () => {
+    setInscripcionModalOpen(true);
+  };
+
+  const handleInscripcionExitosa = (familia: InscripcionFamilia) => {
+    setInscripcionModalOpen(false);
+    if (familia.colegioId) {
+      setSelectedColegioId(familia.colegioId);
+    }
     setFamiliasModalOpen(true);
   };
 
@@ -41,19 +55,18 @@ export default function App() {
       {/* Navigation Header */}
       <Header
         onOpenFamilias={handleOpenFamilias}
+        onOpenInscripcion={handleOpenInscripcion}
         onScrollTo={handleScrollTo}
         onOpenAdmin={() => setAdminModalOpen(true)}
       />
 
       {/* Main Sections */}
       <main className="flex-1">
-        {/* Hero with school search & sample watermark viewer */}
+        {/* Hero with inscription CTA, school search & sample watermark viewer */}
         <Hero
           onOpenFamilias={handleOpenFamilias}
+          onOpenInscripcion={handleOpenInscripcion}
         />
-
-        {/* Credentials & Trust Metrics */}
-        <TrustStats />
 
         {/* How it Works / 5-Step Process */}
         <ProcesoSection
@@ -87,6 +100,14 @@ export default function App() {
         preselectedColegioId={selectedColegioId}
         preselectedKitId={selectedKitId}
         preselectedCodigo={selectedCodigo}
+        onOpenInscripcion={handleOpenInscripcion}
+      />
+
+      {/* Registration Modal for Families */}
+      <ModalInscripcionFamilia
+        isOpen={inscripcionModalOpen}
+        onClose={() => setInscripcionModalOpen(false)}
+        onInscripcionExitosa={handleInscripcionExitosa}
       />
 
       {/* Photographer Admin Panel Modal */}
