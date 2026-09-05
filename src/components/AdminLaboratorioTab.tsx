@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react';
+import * as XLSX from 'xlsx';
 import { 
   Printer, Download, Mail, CheckCircle2, FolderDown, FileCode, 
-  Layers, Search, RefreshCw, FileText, Check, Sparkles, AlertCircle
+  Layers, Search, RefreshCw, FileText, Check, Sparkles, AlertCircle, FileSpreadsheet
 } from 'lucide-react';
 import { 
   PedidoEscolarCompleto, 
@@ -135,6 +136,56 @@ export default function AdminLaboratorioTab({
   };
 
   // Re-send HD photos link by email
+  const handleExportarExcelLaboratorio = () => {
+    const wb = XLSX.utils.book_new();
+    const data = pedidosFiltrados.map((p, idx) => ({
+      'N°': idx + 1,
+      'ID Pedido': p.id,
+      'Fecha': p.fecha,
+      'Curso / Sala': p.seccionNombre,
+      'Alumno': `${p.alumnoApellido}, ${p.alumnoNombre}`,
+      'Tutor Responsable': p.tutorNombre,
+      'Teléfono': p.tutorTelefono,
+      'Email': p.tutorEmail,
+      'Kit Contratado': p.kitNombre,
+      'Cantidad Fotos': p.fotosSeleccionadas.length,
+      'Estado Pago': p.estadoPago.toUpperCase(),
+      'Importe Total': `$${p.total.toLocaleString('es-AR')}`,
+      'Subcarpeta Lab': `${p.seccionId.toUpperCase()}/${String(idx + 1).padStart(2, '0')}_${p.alumnoApellido.replace(/\s+/g, '_').toUpperCase()}_${p.alumnoNombre.replace(/\s+/g, '_').toUpperCase()}`
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 5 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 25 },
+      { wch: 28 },
+      { wch: 25 },
+      { wch: 16 },
+      { wch: 26 },
+      { wch: 22 },
+      { wch: 15 },
+      { wch: 14 },
+      { wch: 15 },
+      { wch: 45 }
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Planilla de Control');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `CONTROL_REVELADO_${colegioNombre.replace(/\s+/g, '_')}_${cursoFiltro}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setZipFeedbackMsg('¡Planilla de control para laboratorio exportada a Excel (.XLSX)!');
+    setTimeout(() => setZipFeedbackMsg(null), 3500);
+  };
+
   const handleReenviarEmailHD = (pedido: PedidoEscolarCompleto) => {
     const ahora = new Date();
     const fechaHora = `${ahora.toLocaleDateString('es-AR')} ${ahora.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' })}`;
@@ -210,7 +261,17 @@ export default function AdminLaboratorioTab({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            <button
+              onClick={handleExportarExcelLaboratorio}
+              disabled={pedidosFiltrados.length === 0}
+              className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-extrabold text-xs rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center gap-2 cursor-pointer active:scale-98"
+              title="Descarga la planilla de control de pedidos para el laboratorio en formato Excel (.XLSX)"
+            >
+              <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+              <span>Planilla Excel (.XLSX)</span>
+            </button>
+
             <button
               onClick={handleDescargarLoteCompleto}
               disabled={isDescargandoZip || pedidosFiltrados.length === 0}

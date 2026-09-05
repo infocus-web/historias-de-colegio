@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { 
   X, Lock, Camera, Upload, CheckCircle2, DollarSign, Package, 
   School, RefreshCw, Eye, AlertCircle, ArrowRight, Users, Search, CheckSquare, Square, Download,
-  Key, Copy, Check, MessageSquare, Sparkles, Send, ExternalLink, Printer, HardDrive, FileCode, Mail
+  Key, Copy, Check, MessageSquare, Sparkles, Send, ExternalLink, Printer, HardDrive, FileCode, Mail,
+  FileSpreadsheet, Scissors, FileText
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA, KITS_DISPONIBLES } from '../data/colegiosData';
 import { ALUMNOS_NOMINA_2026, SECCIONES_INICIAL_2026 } from '../data/alumnosData';
@@ -14,8 +16,16 @@ import {
   guardarPedidosEnStorage, 
   PedidoEscolarCompleto 
 } from '../services/pedidosLabService';
+import { 
+  descargarExcelLegibleColegio,
+  descargarCSVEspañolCompatible,
+  descargarGuiaWhatsAppTxt,
+  generarGuiaWhatsAppColegioTexto,
+  generarMensajeWhatsApp
+} from '../services/difusionEscolarService';
 import AdminLaboratorioTab from './AdminLaboratorioTab';
 import AdminLoteFotosTab from './AdminLoteFotosTab';
+import { CircularImprimibleModal } from './CircularImprimibleModal';
 import { Colegio, Foto } from '../types';
 
 interface AdminModalProps {
@@ -34,6 +44,9 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
 
   // Real synced orders for photo lab and families
   const [pedidosCompletos, setPedidosCompletos] = useState<PedidoEscolarCompleto[]>(() => obtenerPedidosGuardados());
+
+  // Schools list state
+  const [colegiosList, setColegiosList] = useState<Colegio[]>(COLEGIOS_EJEMPLO);
 
   useEffect(() => {
     if (isOpen) {
@@ -67,25 +80,74 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
     setTimeout(() => setCopiadoFeedback(null), 2500);
   };
 
-  const handleExportarPlanillaCSV = () => {
-    const encabezados = ['Seccion ID', 'Sala / Curso', 'Turno', 'Division', 'Nombre Completo', 'Total Alumnos', 'Codigo de Acceso'];
-    const filas = SECCIONES_INICIAL_2026.map(sec => [
-      sec.id,
-      `"${sec.sala}"`,
-      `"${sec.turno}"`,
-      `"${sec.division}"`,
-      `"${sec.nombreCompleto}"`,
-      sec.totalAlumnos,
-      `"${codigosMap[sec.id] || ''}"`,
-    ]);
-    const csvContent = 'data:text/csv;charset=utf-8,' + [encabezados.join(','), ...filas.map(f => f.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', 'codigos_cursos_fotos_2026.csv');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const [mostrarCircularModal, setMostrarCircularModal] = useState(false);
+  const [seccionParaCircular, setSeccionParaCircular] = useState<string | undefined>(undefined);
+
+  const colegioActualNombre = colegiosList[0]?.nombre || 'Colegio San Martín de Tours';
+
+  const handleDescargarExcelLegible = () => {
+    descargarExcelLegibleColegio(SECCIONES_INICIAL_2026, codigosMap, colegioActualNombre);
+    setCopiadoFeedback('¡Libro de Microsoft Excel (.XLSX) con 3 hojas descargado con éxito!');
+    setTimeout(() => setCopiadoFeedback(null), 3500);
+  };
+
+  const handleExportarNominaExcel = () => {
+    const wb = XLSX.utils.book_new();
+    const data = alumnosFiltradosAdmin.map((a, idx) => ({
+      'N°': idx + 1,
+      'Apellido': a.apellido,
+      'Nombre': a.nombre,
+      'Curso / Sala': a.grado,
+      'Turno': a.turno,
+      'División': a.division,
+      'Código de Acceso': codigosMap[a.seccionId] || a.seccionId,
+      'Fotos Incluidas en Paquete': '3 tomas (Retrato, Grupo, Docente)'
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 6 },
+      { wch: 22 },
+      { wch: 22 },
+      { wch: 26 },
+      { wch: 12 },
+      { wch: 10 },
+      { wch: 20 },
+      { wch: 35 }
+    ];
+    XLSX.utils.book_append_sheet(wb, ws, 'Nómina Alumnos');
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `NOMINA_ALUMNOS_${colegioActualNombre.replace(/\s+/g, '_')}_${filtroSeccionAlumnos}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setCopiadoFeedback('¡Nómina de alumnos exportada a Excel (.XLSX) exitosamente!');
+    setTimeout(() => setCopiadoFeedback(null), 3000);
+  };
+
+  const handleExportarCSVEspañol = () => {
+    descargarCSVEspañolCompatible(SECCIONES_INICIAL_2026, codigosMap, colegioActualNombre);
+    setCopiadoFeedback('¡CSV descargado con codificación UTF-8 compatible con Excel en español!');
+    setTimeout(() => setCopiadoFeedback(null), 3000);
+  };
+
+  const handleCopiarPackCompletoWhatsApp = () => {
+    const guiaTexto = generarGuiaWhatsAppColegioTexto(SECCIONES_INICIAL_2026, codigosMap, colegioActualNombre);
+    navigator.clipboard.writeText(guiaTexto);
+    setCopiadoFeedback('¡Pack completo de WhatsApp copiado al portapapeles para enviar a la Dirección!');
+    setTimeout(() => setCopiadoFeedback(null), 3500);
+  };
+
+  const handleDescargarGuiaTxt = () => {
+    descargarGuiaWhatsAppTxt(SECCIONES_INICIAL_2026, codigosMap, colegioActualNombre);
+    setCopiadoFeedback('¡Guía de mensajes en archivo de texto (.TXT) descargada!');
+    setTimeout(() => setCopiadoFeedback(null), 3000);
   };
 
   // Alumnos roster states
@@ -170,7 +232,6 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   // New school state
-  const [colegiosList, setColegiosList] = useState<Colegio[]>(COLEGIOS_EJEMPLO);
   const [nuevoNombre, setNuevoNombre] = useState('');
   const [nuevaLocalidad, setNuevaLocalidad] = useState('');
   const [nuevaZona, setNuevaZona] = useState<'CABA' | 'Zona Norte' | 'Zona Sur' | 'Zona Oeste'>('CABA');
@@ -390,7 +451,7 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
                 { id: 'laboratorio', label: 'Laboratorio & Ensobrado (ZIP)', icon: Printer },
                 { id: 'pedidos', label: `Pedidos Familias (${pedidosCompletos.length})`, icon: Package },
                 { id: 'subir', label: 'Cargar Fotos Curso (100GB Supabase)', icon: HardDrive },
-                { id: 'codigos', label: 'Generar Códigos por Curso', icon: Key },
+                { id: 'codigos', label: 'Códigos & Difusión WhatsApp', icon: Key },
                 { id: 'alumnos', label: `Nómina 2026 (${ALUMNOS_NOMINA_2026.length})`, icon: Users },
                 { id: 'colegios', label: 'Colegios y Códigos', icon: School },
               ].map(t => {
@@ -533,50 +594,99 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
                 )}
 
                 {/* Header & Quick Action Buttons */}
-                <div className="bg-amber-50/90 border border-amber-200 rounded-3xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5 shadow-xs">
-                  <div className="space-y-1.5">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-200/80 text-amber-900 text-[10px] font-extrabold uppercase tracking-wider">
-                      <Sparkles className="w-3 h-3 text-amber-700" />
-                      <span>Herramienta Oficial del Fotógrafo</span>
+                <div className="bg-gradient-to-br from-amber-50 via-amber-100/40 to-emerald-50/50 border border-amber-200 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
+                  <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                    <div className="space-y-1.5">
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-extrabold uppercase tracking-wider border border-emerald-200">
+                        <Send className="w-3 h-3 text-emerald-600" />
+                        <span>Kit de Difusión para Colegios & WhatsApp</span>
+                      </div>
+                      <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2 font-['Outfit']">
+                        <Key className="w-5 h-5 text-amber-600" />
+                        <span>Códigos de Acceso & Difusión para Familias</span>
+                      </h3>
+                      <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
+                        Generá los mensajes y notas oficiales para que la Dirección o maestras compartan en los <strong>grupos de WhatsApp</strong> o peguen en los <strong>cuadernos de comunicaciones</strong>. Sin códigos técnicos ni archivos ilegibles.
+                      </p>
                     </div>
-                    <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2 font-['Outfit']">
-                      <Key className="w-5 h-5 text-amber-600" />
-                      <span>Generar Códigos de Acceso por Curso</span>
-                    </h3>
-                    <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-                      Generá y administrá el código exclusivo de cada sala y turno. Las familias ingresan con este código, eligen curso, división y turno, visualizan las fotos con marca de agua y eligen las <strong>3 fotos que están incluidas</strong>.
-                    </p>
+
+                    {/* Primary Sharing and Export Suite */}
+                    <div className="flex flex-wrap items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleDescargarExcelLegible}
+                        className="px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
+                        title="Descarga el libro oficial de Microsoft Excel (.XLSX) con 3 pestañas: Códigos, Alumnos e Instrucciones"
+                      >
+                        <FileSpreadsheet className="w-4 h-4 text-emerald-200" />
+                        <span>Descargar Planilla Excel (.XLSX)</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleCopiarPackCompletoWhatsApp}
+                        className="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
+                        title="Copia los mensajes de todas las salas juntos para enviar a la Dirección de la escuela"
+                      >
+                        <Copy className="w-3.5 h-3.5 text-amber-400" />
+                        <span>Copiar Pack WhatsApp Colegio</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSeccionParaCircular(undefined);
+                          setMostrarCircularModal(true);
+                        }}
+                        className="px-3.5 py-2.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-800 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
+                        title="Genera notas para recortar y pegar en el cuaderno de comunicaciones de los alumnos"
+                      >
+                        <Scissors className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Notas Imprimibles (Cuaderno)</span>
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => handleRegenerarCodigos('nemotecnico')}
-                      className="px-3.5 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
-                      title="Genera códigos legibles como SALA3-TM, SALA4-A, etc."
-                    >
-                      <Sparkles className="w-3.5 h-3.5" />
-                      <span>Generar Nemotécnicos</span>
-                    </button>
+                  {/* Secondary Tools row */}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-amber-200/60 text-xs">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Generar Formato:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleRegenerarCodigos('nemotecnico')}
+                        className="px-2.5 py-1.5 bg-amber-200/80 hover:bg-amber-300 text-amber-950 font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                        title="Códigos nemotécnicos como SALA3TM"
+                      >
+                        Nemotécnicos (SALA3TM)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleRegenerarCodigos('pin')}
+                        className="px-2.5 py-1.5 bg-slate-200/80 hover:bg-slate-300 text-slate-800 font-bold text-[11px] rounded-lg transition-colors cursor-pointer"
+                        title="PINs numéricos como INF3-412"
+                      >
+                        PINs Aleatorios
+                      </button>
+                    </div>
 
-                    <button
-                      type="button"
-                      onClick={() => handleRegenerarCodigos('pin')}
-                      className="px-3.5 py-2.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
-                      title="Genera códigos PIN aleatorios como INF3-412"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      <span>Generar PINs</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleExportarPlanillaCSV}
-                      className="px-3.5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-98"
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>Descargar CSV</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleDescargarGuiaTxt}
+                        className="text-[11px] text-slate-600 hover:text-slate-900 font-semibold underline cursor-pointer"
+                      >
+                        Descargar Guía en .TXT
+                      </button>
+                      <span className="text-slate-300">·</span>
+                      <button
+                        type="button"
+                        onClick={handleExportarCSVEspañol}
+                        className="text-[11px] text-slate-600 hover:text-slate-900 font-semibold underline cursor-pointer"
+                        title="CSV con UTF-8 y delimitador punto y coma para Excel en español"
+                      >
+                        CSV para Excel (con ;)
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -610,6 +720,8 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
                     .filter((sec) => filtroSalaCodigos === 'todas' || sec.sala.includes(filtroSalaCodigos))
                     .map((sec) => {
                       const currentCode = codigosMap[sec.id] || '';
+                      const mensajeCurso = generarMensajeWhatsApp(sec, currentCode, colegioActualNombre);
+
                       return (
                         <div
                           key={sec.id}
@@ -654,7 +766,7 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
                                     if (val) handleGuardarCodigo(sec.id, val);
                                   }
                                 }}
-                                className="px-3 py-1.5 text-xs font-mono font-black uppercase bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-400 w-full tracking-wider"
+                                className="px-3 py-1.5 text-xs font-mono font-black uppercase bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-amber-400 w-full tracking-wider text-slate-900"
                               />
                               <button
                                 type="button"
@@ -668,30 +780,58 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
                             </div>
                           </div>
 
-                          {/* Actions */}
-                          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2 flex-wrap">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const msg = getMensajeWhatsAppParaCurso(sec, currentCode);
-                                setMensajeWhatsAppModal({ seccion: sec, codigo: currentCode, texto: msg });
-                              }}
-                              className="text-xs font-bold text-emerald-700 hover:text-emerald-800 flex items-center gap-1.5 p-1 rounded-lg hover:bg-emerald-50 transition-colors cursor-pointer"
-                            >
-                              <MessageSquare className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>Mensaje WhatsApp</span>
-                            </button>
+                          {/* Quick Message Preview & Actions */}
+                          <div className="pt-2 border-t border-slate-100 space-y-2">
+                            <div className="flex items-center justify-between gap-2 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <a
+                                  href={`https://wa.me/?text=${encodeURIComponent(mensajeCurso)}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
+                                  title="Abrir WhatsApp con el mensaje ya redactado"
+                                >
+                                  <Send className="w-3.5 h-3.5" />
+                                  <span>WhatsApp</span>
+                                </a>
 
-                            {onProbarCodigo && (
-                              <button
-                                type="button"
-                                onClick={() => onProbarCodigo(currentCode)}
-                                className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 p-1 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer"
-                              >
-                                <span>Probar como familia</span>
-                                <ExternalLink className="w-3 h-3" />
-                              </button>
-                            )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopiarTexto(mensajeCurso, `¡Mensaje de WhatsApp para ${sec.nombreCompleto} copiado!`)}
+                                  className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1 transition-colors cursor-pointer"
+                                  title="Copiar texto completo para WhatsApp"
+                                >
+                                  <Copy className="w-3.5 h-3.5 text-slate-500" />
+                                  <span>Copiar Texto</span>
+                                </button>
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSeccionParaCircular(sec.id);
+                                    setMostrarCircularModal(true);
+                                  }}
+                                  className="text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                                  title="Ver e imprimir nota para cuaderno de este curso"
+                                >
+                                  <Scissors className="w-3.5 h-3.5 text-amber-600" />
+                                  <span>Imprimir Nota</span>
+                                </button>
+
+                                {onProbarCodigo && (
+                                  <button
+                                    type="button"
+                                    onClick={() => onProbarCodigo(currentCode)}
+                                    className="text-xs font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 p-1 rounded-lg hover:bg-amber-50 transition-colors cursor-pointer"
+                                  >
+                                    <span>Probar</span>
+                                    <ExternalLink className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       );
@@ -726,29 +866,12 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
 
                     <button
                       type="button"
-                      onClick={() => {
-                        const csvContent =
-                          'data:text/csv;charset=utf-8,' +
-                          ['Orden,Apellido,Nombre,Grado,Turno,Division']
-                            .concat(
-                              alumnosFiltradosAdmin.map(
-                                (a, idx) =>
-                                  `${idx + 1},"${a.apellido}","${a.nombre}","${a.grado}","${a.turno}","${a.division}"`
-                              )
-                            )
-                            .join('\n');
-                        const encodedUri = encodeURI(csvContent);
-                        const link = document.createElement('a');
-                        link.setAttribute('href', encodedUri);
-                        link.setAttribute('download', `nomina_alumnos_2026_${filtroSeccionAlumnos}.csv`);
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                      }}
-                      className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                      onClick={handleExportarNominaExcel}
+                      className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                      title="Exporta la nómina completa directamente a un archivo de Excel (.XLSX)"
                     >
-                      <Download className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Descargar CSV</span>
+                      <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-200" />
+                      <span>Exportar a Excel (.XLSX)</span>
                     </button>
                   </div>
                 </div>
@@ -1050,6 +1173,16 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
             </div>
           </div>
         )}
+
+        {/* Printable & Cutout Notes Modal */}
+        <CircularImprimibleModal
+          isOpen={mostrarCircularModal}
+          onClose={() => setMostrarCircularModal(false)}
+          secciones={SECCIONES_INICIAL_2026}
+          codigosMap={codigosMap}
+          colegioNombre={colegioActualNombre}
+          seccionSeleccionadaInicial={seccionParaCircular}
+        />
 
       </div>
     </div>
