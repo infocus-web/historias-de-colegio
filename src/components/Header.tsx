@@ -44,7 +44,7 @@ export default function Header({
               </>
             )}
             <a
-              href="https://wa.me/5491128625916?text=Hola%20infocus,%20quisiera%20hacer%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a"
+              href="https://wa.me/5491128625916?text=Hola%20Retrato%20Escolar,%20quisiera%20hacer%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1 text-emerald-400 hover:text-emerald-300 transition-colors"
@@ -70,15 +70,15 @@ export default function Header({
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-bold tracking-tight text-slate-900 font-['Outfit'] lowercase">
-                  in<span className="text-amber-600">focus</span>
+                <span className="text-xl font-extrabold tracking-tight text-slate-900 font-['Outfit']">
+                  Retrato<span className="text-amber-600">Escolar</span>
                 </span>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 border border-amber-200">
-                  Familias
+                  .com.ar
                 </span>
               </div>
               <p className="text-[11px] text-slate-500 -mt-0.5 font-medium tracking-wide">
-                Portal de fotos escolares para padres y familias
+                retratoescolar.com.ar · Portal de fotos escolares
               </p>
             </div>
           </div>

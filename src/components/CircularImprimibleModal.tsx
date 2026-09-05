@@ -17,7 +17,7 @@ export function CircularImprimibleModal({
   onClose,
   secciones,
   codigosMap,
-  colegioNombre = 'Colegio San Martín de Tours',
+  colegioNombre = 'Instituto Divino Pastor',
   seccionSeleccionadaInicial,
 }: CircularImprimibleModalProps) {
   const [seccionFiltro, setSeccionFiltro] = useState<string>(seccionSeleccionadaInicial || 'todas');
@@ -207,7 +207,7 @@ export function CircularImprimibleModal({
                           {code}
                         </span>
                         <span className="text-[10px] text-amber-900 font-semibold block">
-                          Ingresar en: <strong>historiasdecolegio.com.ar</strong>
+                          Ingresar en: <strong>retratoescolar.com.ar</strong>
                         </span>
                       </div>
 
@@ -336,7 +336,7 @@ export function CircularImprimibleModal({
                           {code}
                         </span>
                         <span className="text-xs font-medium text-amber-950 block">
-                          Acceso online en: <strong>https://historiasdecolegio.com.ar</strong>
+                          Acceso online en: <strong>https://retratoescolar.com.ar</strong>
                         </span>
                       </div>
 

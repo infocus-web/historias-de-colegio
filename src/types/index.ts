@@ -40,6 +40,7 @@ export interface Colegio {
   divisiones: string[];
   turnos: string[];
   codigoAcceso: string;
+  website?: string;
 }
 
 export interface Pedido {

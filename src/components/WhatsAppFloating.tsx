@@ -8,17 +8,17 @@ export default function WhatsAppFloating() {
     {
       icon: User,
       text: 'Soy familia y tengo una consulta sobre las fotos de mi hijo/a',
-      encoded: 'Hola%20InFocus%20Schools,%20soy%20familia%20y%20tengo%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a',
+      encoded: 'Hola%20Retrato%20Escolar,%20soy%20familia%20y%20tengo%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a%20(retratoescolar.com.ar)',
     },
     {
       icon: KeyRound,
-      text: 'Necesito ayuda con el código de acceso a mi curso',
-      encoded: 'Hola%20InFocus%20Schools,%20necesito%20ayuda%20con%20el%20código%20de%20acceso%20a%20mi%20curso',
+      text: 'Me inscribí y solicito el Código de Curso para ver las fotos',
+      encoded: 'Hola%20Retrato%20Escolar,%20me%20acabo%20de%20inscribir%20en%20el%20portal%20retratoescolar.com.ar%20y%20quisiera%20solicitar%20el%20código%20de%20curso%20con%20el%20que%20podré%20acceder%20a%20ver%20las%20fotos',
     },
     {
       icon: HelpCircle,
       text: 'Quiero consultar medios de pago y transferencias',
-      encoded: 'Hola%20InFocus%20Schools,%20quisiera%20consultar%20sobre%20medios%20de%20pago',
+      encoded: 'Hola%20Retrato%20Escolar,%20quisiera%20consultar%20sobre%20medios%20de%20pago%20en%20retratoescolar.com.ar',
     },
   ];
 
@@ -34,9 +34,9 @@ export default function WhatsAppFloating() {
               </div>
               <div>
                 <p className="text-xs font-bold font-['Outfit'] leading-tight">
-                  Atención InFocus Schools
+                  Atención Retrato Escolar
                 </p>
-                <p className="text-[10px] text-emerald-100">En línea · +54 9 11 2862-5916</p>
+                <p className="text-[10px] text-emerald-100">retratoescolar.com.ar · +54 9 11 2862-5916</p>
               </div>
             </div>
             <button

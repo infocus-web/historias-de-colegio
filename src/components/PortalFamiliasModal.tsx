@@ -34,10 +34,11 @@ import {
   Copy,
   Plus,
   Minus,
+  MessageCircle,
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA, KITS_DISPONIBLES } from '../data/colegiosData';
 import { buscarSeccionPorCodigo } from '../data/codigosCursos';
-import { registrarPedidoDesdePortal, PedidoEscolarCompleto } from '../services/pedidosLabService';
+import { registrarPedidoDesdePortal, obtenerPedidosGuardados, PedidoEscolarCompleto } from '../services/pedidosLabService';
 import { obtenerFamiliaActiva, InscripcionFamilia } from '../services/inscripcionesService';
 import WatermarkOverlay from './WatermarkOverlay';
 import { Colegio, KitProducto, Foto } from '../types';
@@ -104,6 +105,8 @@ export default function PortalFamiliasModal({
   // Copias extras impresas para abuelos/familiares (duplicados automáticos para laboratorio)
   const [extraCopiaIndividual, setExtraCopiaIndividual] = useState<number>(0);
   const [extraCopiaGrupal, setExtraCopiaGrupal] = useState<number>(0);
+  const [extraCopiaDocente, setExtraCopiaDocente] = useState<number>(0);
+  const [extraCopiaOtras, setExtraCopiaOtras] = useState<number>(0);
 
   // Step 4: Checkout
   const [tutorNombre, setTutorNombre] = useState('');
@@ -229,8 +232,13 @@ export default function PortalFamiliasModal({
   const precioStickers = extraStickers ? 2500 : 0;
   const precioPortarretrato = extraPortarretrato ? 4200 : 0;
   const precioLlavero = extraLlavero ? 2200 : 0;
+  const totalCopiasExtrasCantidad =
+    extraCopiaIndividual + extraCopiaGrupal + extraCopiaDocente + extraCopiaOtras;
   const precioCopiasExtras =
-    extraCopiaIndividual * PRECIO_COPIA_EXTRA_15x21 + extraCopiaGrupal * PRECIO_COPIA_EXTRA_20x30;
+    extraCopiaIndividual * PRECIO_COPIA_EXTRA_15x21 +
+    extraCopiaGrupal * PRECIO_COPIA_EXTRA_20x30 +
+    extraCopiaDocente * PRECIO_COPIA_EXTRA_15x21 +
+    extraCopiaOtras * PRECIO_COPIA_EXTRA_15x21;
   const total = precioBase + precioStickers + precioPortarretrato + precioLlavero + precioCopiasExtras;
 
   // Handlers
@@ -242,15 +250,6 @@ export default function PortalFamiliasModal({
     }
   };
 
-  const handleCargarDemo = () => {
-    setSelectedColegio(COLEGIOS_EJEMPLO[0]);
-    setGrado('3° grado');
-    setDivision('A');
-    setTurno('Mañana');
-    setNombreAlumno('Valentina Rossi');
-    setStep(2);
-  };
-
   const handleCompletarPago = () => {
     setIsProcessingPayment(true);
     setTimeout(() => {
@@ -258,8 +257,8 @@ export default function PortalFamiliasModal({
       const codCurso = codigoAcceso.trim() || seccionDetectada?.nemotecnico || 'SALA3TM';
 
       const nuevoPedido = registrarPedidoDesdePortal({
-        colegioId: selectedColegio?.id || 'col-inicial-2026',
-        colegioNombre: selectedColegio?.nombre || 'Colegio San Martín de Tours (Nivel Inicial)',
+        colegioId: selectedColegio?.id || 'col-divino-pastor',
+        colegioNombre: selectedColegio?.nombre || 'Instituto Divino Pastor',
         cursoCodigo: codCurso,
         grado: grado || 'Sala 3',
         division: division || 'Única',
@@ -281,6 +280,8 @@ export default function PortalFamiliasModal({
         copiasExtras: {
           individual15x21: extraCopiaIndividual,
           grupal20x30: extraCopiaGrupal,
+          docente15x21: extraCopiaDocente,
+          otras15x21: extraCopiaOtras,
         },
       });
 
@@ -301,11 +302,45 @@ export default function PortalFamiliasModal({
       return;
     }
 
-    // Demo database of orders
+    // Búsqueda de pedidos registrados
+    const pedidosRegistrados = obtenerPedidosGuardados();
+    const cleanNumber = query.replace(/\D/g, '');
+    const encontradoEnDb = pedidosRegistrados.find(
+      (p) => p.id.toUpperCase().includes(query) || (cleanNumber.length >= 6 && p.tutorTelefono.includes(cleanNumber))
+    );
+
+    if (encontradoEnDb) {
+      setSearchedOrder({
+        id: encontradoEnDb.id,
+        colegio: encontradoEnDb.colegioNombre,
+        alumno: `${encontradoEnDb.alumnoNombre} (${encontradoEnDb.grado} ${encontradoEnDb.division})`,
+        tutor: encontradoEnDb.tutorNombre,
+        telefono: encontradoEnDb.tutorTelefono,
+        kit: encontradoEnDb.kitNombre,
+        total: encontradoEnDb.total,
+        fecha: encontradoEnDb.fecha.split(' ')[0],
+        estado: encontradoEnDb.estadoEntrega,
+        estadoTexto:
+          encontradoEnDb.estadoEntrega === 'entregado'
+            ? 'Entregado en la Institución'
+            : encontradoEnDb.estadoEntrega === 'listo_descarga'
+            ? 'Descarga Digital HD Disponible'
+            : encontradoEnDb.estadoEntrega === 'en_espera'
+            ? 'En Espera de Procesamiento'
+            : 'En Laboratorio Fotográfico',
+        descripcionEstado:
+          'Tus fotos se encuentran en proceso de revelado químico profesional en papel satinado 260g y corte computarizado.',
+        pasoActual: 3,
+        entregaEstimada: 'Entrega en el colegio coordinada con la dirección',
+        descargaLista: true,
+      });
+      return;
+    }
+
     const mockOrders = [
       {
         id: 'IFS-2026-8812',
-        colegio: 'Colegio San Martín de Tours',
+        colegio: 'Instituto Divino Pastor',
         alumno: 'Valentina Rossi (3° A)',
         tutor: 'Mariana Gómez',
         telefono: '1154893210',
@@ -321,7 +356,7 @@ export default function PortalFamiliasModal({
       },
       {
         id: 'IFS-2026-8809',
-        colegio: 'Instituto Belgrano Day School',
+        colegio: 'Instituto Divino Pastor',
         alumno: 'Mateo Benítez (1° B)',
         tutor: 'Diego Benítez',
         telefono: '1144559988',
@@ -337,7 +372,7 @@ export default function PortalFamiliasModal({
       },
       {
         id: 'IFS-2026-8795',
-        colegio: 'Colegio Santa María de San Isidro',
+        colegio: 'Instituto Divino Pastor',
         alumno: 'Sofía Álvarez (5° Verde)',
         tutor: 'Luciana Álvarez',
         telefono: '1167221100',
@@ -353,7 +388,6 @@ export default function PortalFamiliasModal({
       },
     ];
 
-    const cleanNumber = query.replace(/\D/g, '');
     const found = mockOrders.find(
       (o) => o.id.includes(query) || (cleanNumber.length >= 6 && o.telefono.includes(cleanNumber))
     );
@@ -364,7 +398,7 @@ export default function PortalFamiliasModal({
       // Create dynamically matching order for user's query if it resembles a code
       setSearchedOrder({
         id: query.startsWith('IFS-') ? query : `IFS-2026-${Math.floor(1000 + Math.random() * 9000)}`,
-        colegio: selectedColegio ? selectedColegio.nombre : 'Colegio San Martín de Tours',
+        colegio: selectedColegio ? selectedColegio.nombre : 'Instituto Divino Pastor',
         alumno: nombreAlumno || 'Alumno Escolar',
         tutor: tutorNombre || 'Tutor Familiar',
         telefono: tutorWhatsapp || '11 5489-3210',
@@ -681,7 +715,7 @@ export default function PortalFamiliasModal({
                           handleIngresarCodigo();
                         }
                       }}
-                      placeholder="Ej: SALA3TM o TOURS26"
+                      placeholder="Ej: SALA3TM o PASTOR26"
                       className="px-3.5 py-2.5 text-xs sm:text-sm uppercase font-mono font-bold tracking-wider bg-white border-2 border-amber-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-500 w-full sm:w-48 shadow-xs"
                     />
                     <button
@@ -705,7 +739,7 @@ export default function PortalFamiliasModal({
                     { code: 'SALA3TT', desc: 'Sala 3 TT' },
                     { code: 'SALA4A', desc: 'Sala 4 A (TT)' },
                     { code: 'SALA5BTT', desc: 'Sala 5 B (TT)' },
-                    { code: 'TOURS26', desc: 'San Martín de Tours' },
+                    { code: 'PASTOR26', desc: 'Instituto Divino Pastor' },
                   ].map((item) => (
                     <button
                       key={item.code}
@@ -744,11 +778,42 @@ export default function PortalFamiliasModal({
 
                 {/* Error Feedback */}
                 {codigoErrorMsg && (
-                  <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-left flex items-center gap-2 text-rose-800 text-xs animate-in fade-in duration-200">
-                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
-                    <span>{codigoErrorMsg}</span>
+                  <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-left flex items-start gap-2 text-rose-800 text-xs animate-in fade-in duration-200">
+                    <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">{codigoErrorMsg}</p>
+                      <p className="text-[11px] text-rose-700 mt-0.5">
+                        Si no recordás o no tenés tu código de curso, contactate por WhatsApp con la institución educativa para que te lo faciliten.
+                      </p>
+                    </div>
                   </div>
                 )}
+
+                {/* WhatsApp Course Code Request Action */}
+                <div className="pt-3 border-t border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-left">
+                  <div className="text-slate-700 text-xs space-y-0.5">
+                    <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                      <MessageCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                      <span>¿Aún no tenés tu Código de Curso?</span>
+                    </p>
+                    <p className="text-[11px] text-slate-600 leading-relaxed">
+                      Al momento de inscribirte, contactate por WhatsApp con la institución educativa para solicitar el código con el que podrás acceder a ver las fotos.
+                    </p>
+                  </div>
+                  <a
+                    href={`https://wa.me/5491128625916?text=${encodeURIComponent(
+                      nombreAlumno.trim()
+                        ? `Hola, me inscribí en el portal para las fotos de ${nombreAlumno.trim()} (${grado} "${division}", Turno ${turno}, ${selectedColegio?.nombre || 'Colegio'}). ¿Me podrían facilitar el código de curso para poder acceder a ver las fotos? ¡Muchas gracias!`
+                        : `Hola, me inscribí en el portal de fotos escolares para ${selectedColegio?.nombre || 'mi colegio'}. ¿Me podrían facilitar el código de curso con el que podré acceder a ver las fotos? ¡Muchas gracias!`
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-4 py-2.5 bg-[#25D366] hover:bg-[#20ba5a] text-white font-extrabold text-xs rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer shrink-0 active:scale-98"
+                  >
+                    <MessageCircle className="w-4 h-4 fill-white" />
+                    <span>Solicitar Código por WhatsApp</span>
+                  </a>
+                </div>
               </div>
 
               {/* School Search List */}
@@ -765,7 +830,7 @@ export default function PortalFamiliasModal({
                     type="text"
                     value={searchColegio}
                     onChange={(e) => setSearchColegio(e.target.value)}
-                    placeholder="Escribí el nombre del colegio o localidad (ej: San Martín, Belgrano, San Isidro)..."
+                    placeholder="Escribí el nombre del colegio o localidad (ej: Divino Pastor, Pilar)..."
                     className="w-full pl-10 pr-4 py-2.5 text-xs sm:text-sm bg-white border border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-400 shadow-xs"
                   />
                 </div>
@@ -787,6 +852,11 @@ export default function PortalFamiliasModal({
                           <div>
                             <p className="text-xs font-bold text-slate-900">{col.nombre}</p>
                             <p className="text-[11px] text-slate-500">{col.localidad} · {col.zona}</p>
+                            {col.website && (
+                              <p className="text-[10px] text-amber-700 font-semibold mt-0.5">
+                                {col.website.replace('https://', '').replace('http://', '').replace(/\/$/, '')}
+                              </p>
+                            )}
                           </div>
                           {isSelected && (
                             <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
@@ -1061,25 +1131,34 @@ export default function PortalFamiliasModal({
               </div>
 
               {/* Category tabs */}
-              <div className="flex gap-2 border-b border-slate-200 pb-3">
-                {[
-                  { id: 'individual', label: 'Retratos Individuales (3 tomas)' },
-                  { id: 'grupal', label: 'Foto Grupal de Grado' },
-                  { id: 'docente', label: 'Con la Seño / Docente' },
-                  { id: 'patio', label: 'Recreo y Patio' },
-                ].map((cat) => (
-                  <button
-                    key={cat.id}
-                    onClick={() => setCategoriaActiva(cat.id as any)}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      categoriaActiva === cat.id
-                        ? 'bg-slate-900 text-white shadow-xs'
-                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: 'individual', label: 'Retratos Individuales (3 tomas)' },
+                    { id: 'grupal', label: 'Foto Grupal de Grado' },
+                    { id: 'docente', label: 'Con la Seño / Docente' },
+                    { id: 'patio', label: 'Otras Fotos' },
+                  ].map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setCategoriaActiva(cat.id as any)}
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        categoriaActiva === cat.id
+                          ? 'bg-slate-900 text-white shadow-xs'
+                          : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                      }`}
+                    >
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
+
+                {totalCopiasExtrasCantidad > 0 && (
+                  <span className="text-xs font-bold px-3 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded-full flex items-center gap-1.5 shadow-2xs">
+                    <Copy className="w-3.5 h-3.5 text-amber-700" />
+                    <span>{totalCopiasExtrasCantidad} copia(s) extra(s) agregada(s)</span>
+                  </span>
+                )}
               </div>
 
               {/* Photo Cards Grid */}
@@ -1096,12 +1175,35 @@ export default function PortalFamiliasModal({
                     if (foto.categoria === 'docente') setFotoSeleccionadaDocente(foto.id);
                   };
 
+                  const getExtraCopiesForThisFoto = () => {
+                    if (foto.categoria === 'individual') return extraCopiaIndividual;
+                    if (foto.categoria === 'grupal') return extraCopiaGrupal;
+                    if (foto.categoria === 'docente') return extraCopiaDocente;
+                    return extraCopiaOtras;
+                  };
+
+                  const handleAddExtraCopy = () => {
+                    if (foto.categoria === 'individual') setExtraCopiaIndividual((prev) => prev + 1);
+                    else if (foto.categoria === 'grupal') setExtraCopiaGrupal((prev) => prev + 1);
+                    else if (foto.categoria === 'docente') setExtraCopiaDocente((prev) => prev + 1);
+                    else setExtraCopiaOtras((prev) => prev + 1);
+                  };
+
+                  const handleRemoveExtraCopy = () => {
+                    if (foto.categoria === 'individual') setExtraCopiaIndividual((prev) => Math.max(0, prev - 1));
+                    else if (foto.categoria === 'grupal') setExtraCopiaGrupal((prev) => Math.max(0, prev - 1));
+                    else if (foto.categoria === 'docente') setExtraCopiaDocente((prev) => Math.max(0, prev - 1));
+                    else setExtraCopiaOtras((prev) => Math.max(0, prev - 1));
+                  };
+
+                  const extraQty = getExtraCopiesForThisFoto();
+
                   return (
                     <div
                       key={foto.id}
                       className={`relative bg-white rounded-2xl overflow-hidden border transition-all duration-200 flex flex-col justify-between ${
-                        isSelected
-                          ? 'border-2 border-amber-500 shadow-lg shadow-amber-500/10 ring-2 ring-amber-400/40'
+                        isSelected || extraQty > 0
+                          ? 'border-2 border-amber-500 shadow-lg shadow-amber-500/10 ring-2 ring-amber-400/30'
                           : 'border-slate-200 hover:border-slate-300 shadow-xs'
                       }`}
                     >
@@ -1123,15 +1225,21 @@ export default function PortalFamiliasModal({
                         {/* Watermark overlay matching exact sample */}
                         <WatermarkOverlay visible={showWatermark} />
 
-                        {/* Status badge: only show clean check badge when selected */}
-                        {isSelected && (
-                          <div className="absolute top-2.5 left-2.5 flex gap-1.5">
+                        {/* Status badges */}
+                        <div className="absolute top-2.5 left-2.5 flex flex-col gap-1.5">
+                          {isSelected && (
                             <span className="px-2.5 py-1 rounded-md bg-amber-400 text-slate-950 text-[11px] font-extrabold flex items-center gap-1 shadow-md">
                               <Check className="w-3.5 h-3.5 stroke-[3]" />
-                              <span>Seleccionada</span>
+                              <span>En el Pack Oficial</span>
                             </span>
-                          </div>
-                        )}
+                          )}
+                          {extraQty > 0 && (
+                            <span className="px-2.5 py-1 rounded-md bg-slate-900 text-amber-300 text-[11px] font-extrabold flex items-center gap-1 shadow-md border border-amber-400/40">
+                              <Copy className="w-3 h-3 text-amber-400" />
+                              <span>+{extraQty} copia extra</span>
+                            </span>
+                          )}
+                        </div>
 
                         {/* Zoom button */}
                         <button
@@ -1144,39 +1252,255 @@ export default function PortalFamiliasModal({
                         </button>
                       </div>
 
-                      {/* Card Details & Action */}
-                      <div className="p-3 flex items-center justify-between gap-3 text-left">
-                        <h5 className="text-xs font-bold text-slate-900 truncate">{foto.titulo}</h5>
+                      {/* Card Details & Action Area */}
+                      <div className="p-3.5 flex flex-col gap-3 text-left bg-white">
+                        <div className="flex items-center justify-between gap-2">
+                          <h5 className="text-xs font-bold text-slate-900 truncate">{foto.titulo}</h5>
 
-                        <button
-                          type="button"
-                          onClick={handleSelectThisFoto}
-                          className={`shrink-0 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                            isSelected
-                              ? 'bg-amber-400 text-slate-950 shadow-xs'
-                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
-                          }`}
-                        >
-                          {isSelected ? (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
-                              <span>Elegida</span>
-                            </>
-                          ) : (
-                            <span>Elegir</span>
+                          {/* Primary Pack selection button */}
+                          {foto.categoria !== 'patio' && (
+                            <button
+                              type="button"
+                              onClick={handleSelectThisFoto}
+                              className={`shrink-0 py-1.5 px-3 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                isSelected
+                                  ? 'bg-amber-400 text-slate-950 shadow-xs'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                              }`}
+                            >
+                              {isSelected ? (
+                                <>
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-950" />
+                                  <span>Elegida</span>
+                                </>
+                              ) : (
+                                <span>Elegir</span>
+                              )}
+                            </button>
                           )}
-                        </button>
+                        </div>
+
+                        {/* Direct Extra Copy Purchase on Card */}
+                        <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                          <div>
+                            <span className="text-[11px] font-bold text-slate-700 block">
+                              Copia extra {foto.categoria === 'grupal' ? '20x30' : '15x21'}
+                            </span>
+                            <span className="text-[10px] text-slate-500">
+                              {foto.categoria === 'grupal' ? '+$4.900 c/u' : '+$3.800 c/u'}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            {extraQty > 0 ? (
+                              <div className="flex items-center gap-1 bg-amber-50 border border-amber-300 rounded-lg p-0.5">
+                                <button
+                                  type="button"
+                                  onClick={handleRemoveExtraCopy}
+                                  className="w-6 h-6 rounded bg-white hover:bg-slate-100 text-slate-700 font-bold flex items-center justify-center text-xs cursor-pointer shadow-2xs"
+                                  title="Restar copia"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </button>
+                                <span className="w-6 text-center text-xs font-black text-amber-950">
+                                  {extraQty}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={handleAddExtraCopy}
+                                  className="w-6 h-6 rounded bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center text-xs cursor-pointer shadow-2xs"
+                                  title="Sumar copia"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={handleAddExtraCopy}
+                                className="px-2.5 py-1 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-[11px] font-bold transition-colors flex items-center gap-1 cursor-pointer"
+                              >
+                                <Plus className="w-3 h-3 text-amber-700" />
+                                <span>Pedir Copia Extra</span>
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
+              {/* Dedicated Extra Copies Section in Step 2 */}
+              <div className="bg-gradient-to-br from-amber-50/80 via-white to-amber-50/40 rounded-2xl p-4 sm:p-5 border-2 border-amber-300/80 shadow-xs space-y-4 text-left">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold shadow-xs shrink-0">
+                      <Copy className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                        <span>¿Querés encargar fotos o copias impresas adicionales?</span>
+                        <span className="text-[10px] font-extrabold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full uppercase">
+                          Para abuelos / familiares
+                        </span>
+                      </h4>
+                      <p className="text-xs text-slate-600 mt-0.5">
+                        El sistema genera automáticamente archivos duplicados rotulados para el laboratorio químico (evitando cualquier omisión al armar el sobre).
+                      </p>
+                    </div>
+                  </div>
+
+                  {totalCopiasExtrasCantidad > 0 && (
+                    <div className="px-3.5 py-1.5 rounded-xl bg-slate-900 text-amber-300 text-xs font-bold flex items-center gap-2 shrink-0 self-start sm:self-auto shadow-xs">
+                      <span>Total copias extras:</span>
+                      <span className="text-white font-black">+{totalCopiasExtrasCantidad} (+$${precioCopiasExtras.toLocaleString('es-AR')})</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+                  {/* Selector 1: Retrato Individual */}
+                  <div className="p-3 rounded-xl bg-white border border-slate-200 hover:border-amber-400 transition-colors shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block truncate">Retrato Individual (15x21)</span>
+                      <span className="text-[11px] text-amber-800 font-bold block mt-0.5">+$3.800 c/u</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">Papel satinado de laboratorio</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
+                      <span className="text-xs font-bold text-slate-600">Copias:</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaIndividual((prev) => Math.max(0, prev - 1))}
+                          disabled={extraCopiaIndividual === 0}
+                          className="w-7 h-7 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-700 font-bold transition-colors cursor-pointer"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-6 text-center font-mono font-bold text-xs text-slate-900">
+                          {extraCopiaIndividual}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaIndividual((prev) => prev + 1)}
+                          className="w-7 h-7 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Selector 2: Foto Grupal 20x30 */}
+                  <div className="p-3 rounded-xl bg-white border border-slate-200 hover:border-amber-400 transition-colors shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block truncate">Foto Grupal (20x30)</span>
+                      <span className="text-[11px] text-amber-800 font-bold block mt-0.5">+$4.900 c/u</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">Ampliación gran formato</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
+                      <span className="text-xs font-bold text-slate-600">Copias:</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaGrupal((prev) => Math.max(0, prev - 1))}
+                          disabled={extraCopiaGrupal === 0}
+                          className="w-7 h-7 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-700 font-bold transition-colors cursor-pointer"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-6 text-center font-mono font-bold text-xs text-slate-900">
+                          {extraCopiaGrupal}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaGrupal((prev) => prev + 1)}
+                          className="w-7 h-7 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Selector 3: Con Docente 15x21 */}
+                  <div className="p-3 rounded-xl bg-white border border-slate-200 hover:border-amber-400 transition-colors shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block truncate">Con la Seño (15x21)</span>
+                      <span className="text-[11px] text-amber-800 font-bold block mt-0.5">+$3.800 c/u</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">Foto con el/la docente</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
+                      <span className="text-xs font-bold text-slate-600">Copias:</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaDocente((prev) => Math.max(0, prev - 1))}
+                          disabled={extraCopiaDocente === 0}
+                          className="w-7 h-7 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-700 font-bold transition-colors cursor-pointer"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-6 text-center font-mono font-bold text-xs text-slate-900">
+                          {extraCopiaDocente}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaDocente((prev) => prev + 1)}
+                          className="w-7 h-7 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Selector 4: Otras Fotos 15x21 */}
+                  <div className="p-3 rounded-xl bg-white border border-slate-200 hover:border-amber-400 transition-colors shadow-2xs flex flex-col justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 block truncate">Otras Fotos (15x21)</span>
+                      <span className="text-[11px] text-amber-800 font-bold block mt-0.5">+$3.800 c/u</span>
+                      <span className="text-[10px] text-slate-500 block mt-0.5">Actividades y momentos</span>
+                    </div>
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-100">
+                      <span className="text-xs font-bold text-slate-600">Copias:</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaOtras((prev) => Math.max(0, prev - 1))}
+                          disabled={extraCopiaOtras === 0}
+                          className="w-7 h-7 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-700 font-bold transition-colors cursor-pointer"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-6 text-center font-mono font-bold text-xs text-slate-900">
+                          {extraCopiaOtras}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaOtras((prev) => prev + 1)}
+                          className="w-7 h-7 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center transition-colors cursor-pointer shadow-2xs"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Bottom Next Step Bar */}
               <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="text-xs text-slate-600 text-left">
-                  <span className="font-bold text-slate-900">Fotos seleccionadas: </span>
-                  Individual (Toma A), Grupal de 3° A y Con la Seño.
+                  <span className="font-bold text-slate-900">Fotos del pack: </span>
+                  Individual, Grupal y Con la Seño.
+                  {totalCopiasExtrasCantidad > 0 && (
+                    <span className="ml-1.5 text-amber-800 font-bold">
+                      (+ {totalCopiasExtrasCantidad} copias extras añadidas)
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex gap-3">
@@ -1192,6 +1516,11 @@ export default function PortalFamiliasModal({
                     className="px-6 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl shadow-md shadow-amber-400/20 flex items-center gap-2 cursor-pointer transition-all active:scale-98"
                   >
                     <span>Elegir Kit y Formato</span>
+                    {totalCopiasExtrasCantidad > 0 && (
+                      <span className="px-2 py-0.5 bg-slate-950 text-amber-300 rounded text-[11px] font-black">
+                        ${total.toLocaleString('es-AR')}
+                      </span>
+                    )}
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -1458,6 +1787,152 @@ export default function PortalFamiliasModal({
                       </div>
                     )}
                   </div>
+
+                  {/* Copia Extra 15x21 Con Docente */}
+                  <div
+                    className={`p-4 rounded-xl border transition-all ${
+                      extraCopiaDocente > 0
+                        ? 'bg-white border-amber-500 shadow-md ring-1 ring-amber-400'
+                        : 'bg-white/80 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">
+                            Copia Extra Con la Seño / Docente (15x21 cm)
+                          </span>
+                          <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                            Recuerdo Escolar
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Copia en papel satinado de la toma con el/la docente (+ $3.800 c/u).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-900">
+                          {extraCopiaDocente === 0
+                            ? '$3.800 ARS c/u'
+                            : `${extraCopiaDocente} copia(s): +$${(
+                                extraCopiaDocente * PRECIO_COPIA_EXTRA_15x21
+                              ).toLocaleString('es-AR')}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaDocente(Math.max(0, extraCopiaDocente - 1))}
+                          disabled={extraCopiaDocente === 0}
+                          className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-700 font-bold transition-colors cursor-pointer"
+                          title="Restar una copia extra con la seño"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-7 text-center font-mono font-bold text-sm text-slate-900">
+                          {extraCopiaDocente}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaDocente(extraCopiaDocente + 1)}
+                          className="w-8 h-8 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                          title="Agregar una copia extra con la seño"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {extraCopiaDocente > 0 && (
+                      <div className="mt-2.5 p-2 rounded-lg bg-amber-100/60 border border-amber-200 text-[10px] text-amber-950 flex items-start gap-1.5 font-mono">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Archivo duplicado en cola:</strong> Se generará{' '}
+                          <span className="font-bold underline text-amber-900">
+                            {codigoAcceso.trim() || '3ATT'}_{nombreAlumno.replace(/\s+/g, '_').toUpperCase() || 'ALUMNO'}_DOCENTE_COPIA2.jpg
+                          </span>{' '}
+                          en la carpeta 15x21.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Copia Extra 15x21 Otras Fotos */}
+                  <div
+                    className={`p-4 rounded-xl border transition-all ${
+                      extraCopiaOtras > 0
+                        ? 'bg-white border-amber-500 shadow-md ring-1 ring-amber-400'
+                        : 'bg-white/80 border-slate-200 hover:border-slate-300'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3 mb-2">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-slate-900">
+                            Copia Extra Otras Fotos / Actividades (15x21 cm)
+                          </span>
+                          <span className="text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                            Foto Suelta
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Toma de actividades escolares y momentos especiales (+ $3.800 c/u).
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                      <div>
+                        <span className="text-xs font-extrabold text-slate-900">
+                          {extraCopiaOtras === 0
+                            ? '$3.800 ARS c/u'
+                            : `${extraCopiaOtras} copia(s): +$${(
+                                extraCopiaOtras * PRECIO_COPIA_EXTRA_15x21
+                              ).toLocaleString('es-AR')}`}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaOtras(Math.max(0, extraCopiaOtras - 1))}
+                          disabled={extraCopiaOtras === 0}
+                          className="w-8 h-8 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-slate-700 font-bold transition-colors cursor-pointer"
+                          title="Restar una copia extra de otras fotos"
+                        >
+                          <Minus className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="w-7 text-center font-mono font-bold text-sm text-slate-900">
+                          {extraCopiaOtras}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setExtraCopiaOtras(extraCopiaOtras + 1)}
+                          className="w-8 h-8 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold flex items-center justify-center transition-colors cursor-pointer shadow-xs"
+                          title="Agregar una copia extra de otras fotos"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {extraCopiaOtras > 0 && (
+                      <div className="mt-2.5 p-2 rounded-lg bg-amber-100/60 border border-amber-200 text-[10px] text-amber-950 flex items-start gap-1.5 font-mono">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-700 shrink-0 mt-0.5" />
+                        <span>
+                          <strong>Archivo duplicado en cola:</strong> Se generará{' '}
+                          <span className="font-bold underline text-amber-900">
+                            {codigoAcceso.trim() || '3ATT'}_{nombreAlumno.replace(/\s+/g, '_').toUpperCase() || 'ALUMNO'}_OTRAS_COPIA2.jpg
+                          </span>{' '}
+                          en la carpeta 15x21.
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -1693,13 +2168,13 @@ export default function PortalFamiliasModal({
                     <div className="p-3 bg-amber-50/70 border border-amber-200 rounded-xl text-xs space-y-1">
                       <p className="font-bold text-amber-900">Datos bancarios para transferir:</p>
                       <p className="text-slate-700">
-                        <strong>Alias:</strong> <span className="font-mono">INFOCUS.SCHOOLS</span>
+                        <strong>Alias:</strong> <span className="font-mono">RETRATO.ESCOLAR</span>
                       </p>
                       <p className="text-slate-700">
                         <strong>CBU:</strong> <span className="font-mono">0070012345678901234567</span>
                       </p>
                       <p className="text-slate-700">
-                        <strong>Titular:</strong> InFocus Fotografía y Video · CUIT 30-71829341-8
+                        <strong>Titular:</strong> Retrato Escolar Fotografía · CUIT 30-71829341-8
                       </p>
                     </div>
                   )}
@@ -1753,13 +2228,25 @@ export default function PortalFamiliasModal({
                           <span>+${(extraCopiaGrupal * PRECIO_COPIA_EXTRA_20x30).toLocaleString('es-AR')}</span>
                         </div>
                       )}
+                      {extraCopiaDocente > 0 && (
+                        <div className="flex justify-between text-amber-300 font-semibold">
+                          <span>Copia extra Con la Seño 15x21 (x{extraCopiaDocente})</span>
+                          <span>+${(extraCopiaDocente * PRECIO_COPIA_EXTRA_15x21).toLocaleString('es-AR')}</span>
+                        </div>
+                      )}
+                      {extraCopiaOtras > 0 && (
+                        <div className="flex justify-between text-amber-300 font-semibold">
+                          <span>Copia extra Otras Fotos 15x21 (x{extraCopiaOtras})</span>
+                          <span>+${(extraCopiaOtras * PRECIO_COPIA_EXTRA_15x21).toLocaleString('es-AR')}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between text-emerald-400 font-medium">
                         <span>Descarga Digital HD</span>
                         <span>Incluida</span>
                       </div>
                     </div>
 
-                    {(extraCopiaIndividual > 0 || extraCopiaGrupal > 0) && (
+                    {totalCopiasExtrasCantidad > 0 && (
                       <div className="p-2.5 rounded-lg bg-amber-400/15 border border-amber-400/30 text-[11px] text-amber-200 flex items-start gap-2">
                         <Printer className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
                         <div>
@@ -1767,7 +2254,7 @@ export default function PortalFamiliasModal({
                             Duplicado automático para laboratorio:
                           </p>
                           <p className="text-[10px] text-amber-200/90 mt-0.5">
-                            Se programarán {extraCopiaIndividual + extraCopiaGrupal} archivo(s) duplicado(s) rotulado(s) para que el minilab imprima ambos ejemplares sin riesgo de olvido.
+                            Se programarán {totalCopiasExtrasCantidad} archivo(s) duplicado(s) rotulado(s) para que el minilab imprima ambos ejemplares sin riesgo de olvido.
                           </p>
                         </div>
                       </div>
@@ -1869,7 +2356,9 @@ export default function PortalFamiliasModal({
                 {/* Extra Copies Confirmation Card if requested */}
                 {pedidoGenerado &&
                   ((pedidoGenerado.copiasExtras?.individual15x21 || 0) > 0 ||
-                    (pedidoGenerado.copiasExtras?.grupal20x30 || 0) > 0) && (
+                    (pedidoGenerado.copiasExtras?.grupal20x30 || 0) > 0 ||
+                    (pedidoGenerado.copiasExtras?.docente15x21 || 0) > 0 ||
+                    (pedidoGenerado.copiasExtras?.otras15x21 || 0) > 0) && (
                     <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-300 text-amber-950 flex items-start gap-3">
                       <Copy className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
                       <div className="text-xs">
@@ -1880,8 +2369,7 @@ export default function PortalFamiliasModal({
                           </span>
                         </p>
                         <p className="text-amber-800 mt-0.5">
-                          El sistema creó automáticamente los archivos duplicados rotulados{' '}
-                          <code className="font-mono font-bold">_COPIA2.jpg</code> para el lote del minilab. El
+                          El sistema creó automáticamente los archivos duplicados rotulados para el lote del minilab. El
                           técnico revelará e incluirá ambos juegos dentro del sobre de tu hijo/a.
                         </p>
                       </div>

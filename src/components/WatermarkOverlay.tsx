@@ -9,7 +9,7 @@ interface WatermarkOverlayProps {
 
 export default function WatermarkOverlay({
   visible = true,
-  text = 'MUESTRA INFOCUS · NO COPIAR ·',
+  text = 'MUESTRA RETRATO ESCOLAR · NO COPIAR ·',
   density = 'dense',
   opacity = 0.72,
 }: WatermarkOverlayProps) {

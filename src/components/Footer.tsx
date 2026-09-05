@@ -17,13 +17,18 @@ export default function Footer({ onOpenFamilias, onScrollTo, onOpenAdmin }: Foot
               <div className="w-9 h-9 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-bold">
                 <Camera className="w-5 h-5 stroke-[2.2]" />
               </div>
-              <span className="text-xl font-bold tracking-tight font-['Outfit'] lowercase">
-                in<span className="text-amber-400">focus</span>
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xl font-extrabold tracking-tight font-['Outfit']">
+                  Retrato<span className="text-amber-400">Escolar</span>
+                </span>
+                <span className="text-[9px] uppercase font-bold px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700">
+                  .com.ar
+                </span>
+              </div>
             </div>
 
             <p className="text-slate-400 leading-relaxed">
-              Portal fotográfico escolar exclusivo para familias. Selección de tomas online, pago digital seguro y descarga inmediata de fotos en alta definición.
+              Portal fotográfico escolar exclusivo para familias en <strong>retratoescolar.com.ar</strong>. Selección de tomas online, pago digital seguro y descarga inmediata de fotos en alta definición.
             </p>
 
             <div className="flex items-center gap-2 text-slate-300 font-medium">
@@ -105,7 +110,7 @@ export default function Footer({ onOpenFamilias, onScrollTo, onOpenAdmin }: Foot
                 <span>Buenos Aires, Argentina</span>
               </p>
               <a
-                href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20tengo%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a"
+                href="https://wa.me/5491128625916?text=Hola%20Retrato%20Escolar,%20tengo%20una%20consulta%20sobre%20las%20fotos%20de%20mi%20hijo/a"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 hover:text-emerald-400 transition-colors"
@@ -126,7 +131,7 @@ export default function Footer({ onOpenFamilias, onScrollTo, onOpenAdmin }: Foot
 
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500">
-          <p>© {new Date().getFullYear()} InFocus Schools · InFocus Fotografía y Video. Portal de Familias.</p>
+          <p>© {new Date().getFullYear()} Retrato Escolar · retratoescolar.com.ar. Portal de Familias.</p>
           <div className="flex items-center gap-4 text-[11px]">
             <span>Defensa del Consumidor</span>
             <span>·</span>

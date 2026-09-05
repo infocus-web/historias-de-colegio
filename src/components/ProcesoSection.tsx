@@ -12,7 +12,7 @@ export default function ProcesoSection({ onOpenFamilias }: ProcesoSectionProps) 
       titulo: 'Recibís el código',
       subtitulo: 'Acceso directo a tu curso',
       descripcion:
-        'Con el código provisto (ej: SALA3TM o TOURS26) ingresás directo al grado, división y turno exacto de tu hijo/a.',
+        'Con el código provisto (ej: SALA3TM o PASTOR26) ingresás directo al grado, división y turno exacto de tu hijo/a.',
       destacado: 'Código único por curso',
     },
     {
@@ -108,18 +108,18 @@ export default function ProcesoSection({ onOpenFamilias }: ProcesoSectionProps) 
         <div className="mt-12 p-6 rounded-2xl bg-gradient-to-r from-slate-900 to-slate-800 text-white flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
           <div className="text-left">
             <h4 className="text-lg font-bold font-['Outfit'] text-white">
-              ¿Querés probar la experiencia antes de recibir el código?
+              ¿Listo para ver y encargar las fotos escolares?
             </h4>
             <p className="text-xs text-slate-300 mt-0.5">
-              Accedé a la galería interactiva de demostración con fotos de muestra y probá el selector de tomas.
+              Ingresá con tu código de acceso para explorar las tomas individuales, grupales y encargar tus copias.
             </p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <button
-              onClick={() => onOpenFamilias('col-5')}
+              onClick={() => onOpenFamilias('col-divino-pastor')}
               className="px-6 py-3 bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs rounded-xl transition-all shadow-md shadow-amber-400/20 flex items-center gap-2 cursor-pointer"
             >
-              <span>Ver Galería Demo Interactiva</span>
+              <span>Ingresar al Portal de Familias</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

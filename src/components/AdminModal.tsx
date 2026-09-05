@@ -4,7 +4,7 @@ import {
   X, Lock, Camera, Upload, CheckCircle2, DollarSign, Package, 
   School, RefreshCw, Eye, AlertCircle, ArrowRight, Users, Search, CheckSquare, Square, Download,
   Key, Copy, Check, MessageSquare, Sparkles, Send, ExternalLink, Printer, HardDrive, FileCode, Mail,
-  FileSpreadsheet, Scissors, FileText
+  FileSpreadsheet, Scissors, FileText, UserCheck
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA, KITS_DISPONIBLES } from '../data/colegiosData';
 import { ALUMNOS_NOMINA_2026, SECCIONES_INICIAL_2026 } from '../data/alumnosData';
@@ -17,6 +17,9 @@ import {
   PedidoEscolarCompleto 
 } from '../services/pedidosLabService';
 import { 
+  obtenerInscripciones 
+} from '../services/inscripcionesService';
+import { 
   descargarExcelLegibleColegio,
   descargarCSVEspañolCompatible,
   descargarGuiaWhatsAppTxt,
@@ -26,6 +29,7 @@ import {
 import { descargarLibroExcel } from '../services/excelDownloadHelper';
 import AdminLaboratorioTab from './AdminLaboratorioTab';
 import AdminLoteFotosTab from './AdminLoteFotosTab';
+import AdminInscriptosTab from './AdminInscriptosTab';
 import { CircularImprimibleModal } from './CircularImprimibleModal';
 import { Colegio, Foto } from '../types';
 
@@ -40,11 +44,16 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
   const [adminPin, setAdminPin] = useState('');
   const [pinError, setPinError] = useState('');
 
-  // Admin tabs - Laboratorio as primary tool for photographers
-  const [activeTab, setActiveTab] = useState<'laboratorio' | 'pedidos' | 'subir' | 'codigos' | 'alumnos' | 'colegios'>('laboratorio');
+  // Admin tabs - Inscriptos & Laboratorio as primary tools for photographers
+  const [activeTab, setActiveTab] = useState<'inscriptos' | 'laboratorio' | 'pedidos' | 'subir' | 'codigos' | 'alumnos' | 'colegios'>('inscriptos');
 
   // Real synced orders for photo lab and families
   const [pedidosCompletos, setPedidosCompletos] = useState<PedidoEscolarCompleto[]>(() => obtenerPedidosGuardados());
+
+  // Pending inscriptions count
+  const [pendientesInscripcionCount, setPendientesInscripcionCount] = useState<number>(() => {
+    return obtenerInscripciones().filter((i) => i.estado === 'pendiente').length;
+  });
 
   // Schools list state
   const [colegiosList, setColegiosList] = useState<Colegio[]>(COLEGIOS_EJEMPLO);
@@ -52,8 +61,21 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
   useEffect(() => {
     if (isOpen) {
       setPedidosCompletos(obtenerPedidosGuardados());
+      const inscriptos = obtenerInscripciones();
+      setPendientesInscripcionCount(inscriptos.filter((i) => i.estado === 'pendiente').length);
     }
   }, [isOpen, activeTab]);
+
+  useEffect(() => {
+    const handleInscripcionesUpdated = () => {
+      const inscriptos = obtenerInscripciones();
+      setPendientesInscripcionCount(inscriptos.filter((i) => i.estado === 'pendiente').length);
+    };
+    window.addEventListener('infocus_inscripciones_updated', handleInscripcionesUpdated);
+    return () => {
+      window.removeEventListener('infocus_inscripciones_updated', handleInscripcionesUpdated);
+    };
+  }, []);
 
   // Course codes state
   const [codigosMap, setCodigosMap] = useState<Record<string, string>>(() => getCodigosCursos());
@@ -84,7 +106,7 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
   const [mostrarCircularModal, setMostrarCircularModal] = useState(false);
   const [seccionParaCircular, setSeccionParaCircular] = useState<string | undefined>(undefined);
 
-  const colegioActualNombre = colegiosList[0]?.nombre || 'Colegio San Martín de Tours';
+  const colegioActualNombre = colegiosList[0]?.nombre || 'Instituto Divino Pastor';
 
   const handleDescargarExcelLegible = () => {
     try {
@@ -276,7 +298,7 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
         ctx.drawImage(img, 0, 0);
 
         ctx.save();
-        const text = 'INFOCUS SCHOOLS · MUESTRA';
+        const text = 'RETRATO ESCOLAR · MUESTRA';
         const fontSize = Math.max(18, Math.round(canvas.width * 0.045));
         ctx.font = `bold ${fontSize}px sans-serif`;
         ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
@@ -423,7 +445,7 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
             </form>
 
             <div className="text-[11px] text-slate-400">
-              PIN de demostración: <strong className="text-slate-600">infocus</strong> o <strong className="text-slate-600">admin</strong>
+              PIN de acceso: <strong className="text-slate-600">admin</strong>
             </div>
           </div>
         ) : (
@@ -457,6 +479,15 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
             {/* Navigation tabs */}
             <div className="flex border-b border-slate-200 gap-3 overflow-x-auto pb-0.5">
               {[
+                {
+                  id: 'inscriptos',
+                  label:
+                    pendientesInscripcionCount > 0
+                      ? `Inscriptos (${pendientesInscripcionCount} pendientes)`
+                      : 'Inscriptos & Envío Códigos',
+                  icon: UserCheck,
+                  badge: pendientesInscripcionCount > 0 ? pendientesInscripcionCount : undefined
+                },
                 { id: 'laboratorio', label: 'Laboratorio & Ensobrado (ZIP)', icon: Printer },
                 { id: 'pedidos', label: `Pedidos Familias (${pedidosCompletos.length})`, icon: Package },
                 { id: 'subir', label: 'Cargar Fotos Curso (100GB Supabase)', icon: HardDrive },
@@ -476,10 +507,20 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
                   >
                     <Icon className="w-4 h-4" />
                     <span>{t.label}</span>
+                    {t.badge && (
+                      <span className="px-1.5 py-0.2 rounded-full text-[10px] font-extrabold bg-amber-500 text-slate-950">
+                        {t.badge}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
+
+            {/* TAB: INSCRIPTOS & GESTIÓN DE ACCESOS */}
+            {activeTab === 'inscriptos' && (
+              <AdminInscriptosTab onProbarCodigo={onProbarCodigo} />
+            )}
 
             {/* TAB: LABORATORIO & ENSOBRADO */}
             {activeTab === 'laboratorio' && (
@@ -1096,7 +1137,19 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
                       <div key={c.id} className="p-3.5 flex items-center justify-between">
                         <div>
                           <h4 className="text-xs font-bold text-slate-900">{c.nombre}</h4>
-                          <span className="text-[11px] text-slate-500">{c.localidad} ({c.zona})</span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] text-slate-500">{c.localidad} ({c.zona})</span>
+                            {c.website && (
+                              <a
+                                href={c.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] text-amber-700 hover:text-amber-900 font-semibold underline"
+                              >
+                                {c.website.replace('https://', '').replace('http://', '').replace(/\/$/, '')}
+                              </a>
+                            )}
+                          </div>
                         </div>
                         <span className="px-2 py-0.5 rounded bg-slate-100 font-mono text-xs font-bold text-slate-800">
                           {c.codigoAcceso}

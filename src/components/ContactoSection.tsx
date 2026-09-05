@@ -41,7 +41,7 @@ export default function ContactoSection() {
                   <p className="text-xs font-bold text-slate-900">WhatsApp Oficial</p>
                   <p className="text-xs text-slate-600 mt-0.5">+54 9 11 2862-5916</p>
                   <a
-                    href="https://wa.me/5491128625916?text=Hola%20InFocus%20Schools,%20quisiera%20hacer%20una%20consulta"
+                    href="https://wa.me/5491128625916?text=Hola%20Retrato%20Escolar,%20quisiera%20hacer%20una%20consulta%20desde%20retratoescolar.com.ar"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[11px] font-bold text-emerald-700 hover:underline block mt-1"

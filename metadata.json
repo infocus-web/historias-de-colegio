@@ -1,6 +1,6 @@
 {
-  "name": "infocus - Fotografía Escolar",
-  "description": "Portal online de fotos escolares para familias. Ingresá con el código de tu curso, elegí las 3 fotos incluidas con marca de agua y recibí tus kits impresos o descarga digital HD.",
+  "name": "Retrato Escolar - retratoescolar.com.ar",
+  "description": "Portal online de fotos escolares para familias en retratoescolar.com.ar. Ingresá con el código de tu curso, elegí las 3 fotos incluidas con marca de agua y recibí tus kits impresos o descarga digital HD.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

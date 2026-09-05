@@ -16,6 +16,8 @@ export interface ArchivoFotoLab {
 export interface CopiasExtrasConfig {
   individual15x21: number;
   grupal20x30: number;
+  docente15x21?: number;
+  otras15x21?: number;
 }
 
 export interface PedidoEscolarCompleto {
@@ -95,7 +97,7 @@ export function generarNombreArchivoLab(
   cursoCodigo: string,
   _numeroLista: number,
   alumnoNombre: string,
-  tipoFoto?: 'INDIVIDUAL' | 'GRUPAL' | 'DOCENTE' | 'STICKERS',
+  tipoFoto?: 'INDIVIDUAL' | 'GRUPAL' | 'DOCENTE' | 'OTRAS' | 'STICKERS',
   _tamano?: '15x21' | '20x30' | '10x15',
   esCopiaExtra?: boolean,
   numeroCopia?: number
@@ -106,21 +108,27 @@ export function generarNombreArchivoLab(
     if (tipoFoto === 'DOCENTE') {
       return `${codigoCliente}_DOCENTE${sufijoCopia}.jpg`;
     }
+    if (tipoFoto === 'OTRAS') {
+      return `${codigoCliente}_OTRAS${sufijoCopia}.jpg`;
+    }
     return `${codigoCliente}${sufijoCopia}.jpg`;
   }
   if (tipoFoto === 'DOCENTE') {
     return `${codigoCliente}_DOCENTE.jpg`;
   }
+  if (tipoFoto === 'OTRAS') {
+    return `${codigoCliente}_OTRAS.jpg`;
+  }
   return `${codigoCliente}.jpg`;
 }
 
-// Initial demo orders to showcase the functionality immediately
+// Pedidos iniciales registrados en el sistema
 const PEDIDOS_INICIALES: PedidoEscolarCompleto[] = [
   {
     id: 'IFS-2026-9001',
     fecha: '05/09/2026 09:15',
-    colegioId: 'col-inicial-2026',
-    colegioNombre: 'Colegio San Martín de Tours (Nivel Inicial)',
+    colegioId: 'col-divino-pastor',
+    colegioNombre: 'Instituto Divino Pastor',
     cursoCodigo: '3ATT',
     grado: 'Sala 3 Años',
     division: 'TT',
@@ -186,8 +194,8 @@ const PEDIDOS_INICIALES: PedidoEscolarCompleto[] = [
   {
     id: 'IFS-2026-8812',
     fecha: '02/09/2026 10:30',
-    colegioId: 'col-inicial-2026',
-    colegioNombre: 'Colegio San Martín de Tours (Nivel Inicial)',
+    colegioId: 'col-divino-pastor',
+    colegioNombre: 'Instituto Divino Pastor',
     cursoCodigo: 'SALA3TM',
     grado: 'Sala 3',
     division: 'Única',
@@ -246,8 +254,8 @@ const PEDIDOS_INICIALES: PedidoEscolarCompleto[] = [
   {
     id: 'IFS-2026-8809',
     fecha: '02/09/2026 11:45',
-    colegioId: 'col-inicial-2026',
-    colegioNombre: 'Colegio San Martín de Tours (Nivel Inicial)',
+    colegioId: 'col-divino-pastor',
+    colegioNombre: 'Instituto Divino Pastor',
     cursoCodigo: 'SALA3TM',
     grado: 'Sala 3',
     division: 'Única',
@@ -296,8 +304,8 @@ const PEDIDOS_INICIALES: PedidoEscolarCompleto[] = [
   {
     id: 'IFS-2026-8795',
     fecha: '01/09/2026 16:20',
-    colegioId: 'col-inicial-2026',
-    colegioNombre: 'Colegio San Martín de Tours (Nivel Inicial)',
+    colegioId: 'col-divino-pastor',
+    colegioNombre: 'Instituto Divino Pastor',
     cursoCodigo: 'SALA4A',
     grado: 'Sala 4',
     division: 'A',
@@ -503,6 +511,59 @@ export function registrarPedidoDesdePortal(params: {
     }
   }
 
+  // Generación automática de archivos duplicados para el laboratorio (Copia Extra 15x21 Con Docente)
+  if (params.copiasExtras?.docente15x21 && params.copiasExtras.docente15x21 > 0 && docenteFoto) {
+    for (let c = 1; c <= params.copiasExtras.docente15x21; c++) {
+      const numCopia = c + 1;
+      archivosLab.push({
+        id: `arch-${Date.now()}-extra-doc-${c}`,
+        tipo: 'docente',
+        nombreArchivoOriginal: 'DOCENTE_HD.jpg',
+        nombreArchivoLab: generarNombreArchivoLab(
+          params.cursoCodigo,
+          numLista,
+          params.alumnoNombre,
+          'DOCENTE',
+          '15x21',
+          true,
+          numCopia
+        ),
+        tamanoImpresion: '15x21',
+        urlMuestra: docenteFoto.thumbnail,
+        urlOriginalHD: docenteFoto.url,
+        esCopiaExtra: true,
+        numeroCopia: numCopia
+      });
+    }
+  }
+
+  // Generación automática de archivos para el laboratorio (Copia Extra 15x21 Otras Fotos)
+  if (params.copiasExtras?.otras15x21 && params.copiasExtras.otras15x21 > 0) {
+    const patioFoto = FOTOS_MUESTRA.find(f => f.categoria === 'patio') || FOTOS_MUESTRA[5];
+    for (let c = 1; c <= params.copiasExtras.otras15x21; c++) {
+      const numCopia = c;
+      archivosLab.push({
+        id: `arch-${Date.now()}-extra-otras-${c}`,
+        tipo: 'individual',
+        nombreArchivoOriginal: 'OTRAS_HD.jpg',
+        nombreArchivoLab: generarNombreArchivoLab(
+          params.cursoCodigo,
+          numLista,
+          params.alumnoNombre,
+          'OTRAS',
+          '15x21',
+          true,
+          numCopia + 1
+        ),
+        tamanoImpresion: '15x21',
+        urlMuestra: patioFoto.thumbnail,
+        urlOriginalHD: patioFoto.url,
+        esCopiaExtra: true,
+        numeroCopia: numCopia
+      });
+    }
+  }
+
   const now = new Date();
   const fechaStr = `${String(now.getDate()).padStart(2, '0')}/${String(now.getMonth() + 1).padStart(2, '0')}/${now.getFullYear()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
@@ -582,7 +643,7 @@ async function generarJpgSimuladoLaboratorio(
     ctx.fillStyle = '#d97706';
     ctx.font = 'bold 24px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('INFOCUS SCHOOLS · FOTOGRAFÍA ESCOLAR 2026', canvas.width / 2, 65);
+    ctx.fillText('RETRATO ESCOLAR · FOTOGRAFÍA ESCOLAR 2026', canvas.width / 2, 65);
 
     if (esCopiaExtra) {
       // Badge destacado de copia extra
@@ -646,7 +707,7 @@ export async function descargarLoteLaboratorioZip(
 
   // 1. Text checklist for envelope packing
   let planillaTexto = `===========================================================\n`;
-  planillaTexto += `INFOCUS SCHOOLS - PLANILLA DE LABORATORIO Y ENSOBRADO\n`;
+  planillaTexto += `RETRATO ESCOLAR - PLANILLA DE LABORATORIO Y ENSOBRADO\n`;
   planillaTexto += `Institución: ${opciones.nombreColegio}\n`;
   planillaTexto += `Fecha de Generación: ${new Date().toLocaleString('es-AR')}\n`;
   planillaTexto += `Total de Pedidos Aprobados: ${pedidosFiltrados.length}\n`;

@@ -1,15 +1,12 @@
 import React, { useState, useMemo } from 'react';
 import { 
-  Camera, Upload, CheckCircle2, HardDrive, 
-  Trash2, RefreshCw, Key, ShieldCheck, Check
+  Camera, Upload, CheckCircle2, 
+  Trash2, RefreshCw, ShieldCheck, Check
 } from 'lucide-react';
 import { COLEGIOS_EJEMPLO, FOTOS_MUESTRA } from '../data/colegiosData';
 import { SECCIONES_INICIAL_2026 } from '../data/alumnosData';
 import { CODIGOS_CURSOS_INICIALES } from '../data/codigosCursos';
 import { 
-  getSupabaseConfig, 
-  saveSupabaseConfig, 
-  isSupabaseConnected, 
   uploadFotoWeb, 
   uploadFotoHD 
 } from '../services/supabaseClient';
@@ -42,25 +39,9 @@ export default function AdminLoteFotosTab() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
 
-  // Supabase keys management
-  const supabaseConfig = getSupabaseConfig();
-  const [anonKeyInput, setAnonKeyInput] = useState(supabaseConfig.anonKey);
-  const [urlInput, setUrlInput] = useState(supabaseConfig.url);
-  const [showConfigSupabase, setShowConfigSupabase] = useState(false);
-  const [isConectado, setIsConectado] = useState(isSupabaseConnected());
-
   const seccionActual = useMemo(() => {
     return SECCIONES_INICIAL_2026.find(s => (CODIGOS_CURSOS_INICIALES[s.id] || s.id) === cursoSeleccionado) || SECCIONES_INICIAL_2026[0];
   }, [cursoSeleccionado]);
-
-  const handleGuardarConfigSupabase = (e: React.FormEvent) => {
-    e.preventDefault();
-    saveSupabaseConfig(urlInput, anonKeyInput);
-    setIsConectado(isSupabaseConnected());
-    setStatusMessage('Configuración de Supabase Pro guardada exitosamente.');
-    setShowConfigSupabase(false);
-    setTimeout(() => setStatusMessage(null), 3000);
-  };
 
   // Watermarking generator function
   const applyWatermarkToCanvas = (img: HTMLImageElement): string => {
@@ -73,7 +54,7 @@ export default function AdminLoteFotosTab() {
     ctx.drawImage(img, 0, 0);
 
     ctx.save();
-    const text = 'MUESTRA INFOCUS SCHOOLS · FOTOGRAFÍA ESCOLAR';
+    const text = 'MUESTRA RETRATO ESCOLAR · FOTOGRAFÍA ESCOLAR';
     const fontSize = Math.max(16, Math.round(canvas.width * 0.04));
     ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
@@ -179,120 +160,6 @@ export default function AdminLoteFotosTab() {
             Cerrar
           </button>
         </div>
-      )}
-
-      {/* Supabase Pro 100 GB Banner */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950 via-slate-900 to-slate-900 text-white shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-400 text-slate-950 flex items-center justify-center font-bold shadow-md shrink-0">
-            <HardDrive className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h4 className="text-sm font-black font-['Outfit']">Almacenamiento Supabase Pro (100 GB)</h4>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                isConectado 
-                  ? 'bg-emerald-400/20 text-emerald-300 border-emerald-400/30'
-                  : 'bg-amber-400/20 text-amber-300 border-amber-400/30'
-              }`}>
-                {isConectado ? 'PRO 100GB CONECTADO' : 'PRO 100GB CONFIGURABLE'}
-              </span>
-            </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              Proyecto migrado: <code className="text-emerald-300 font-mono text-[11px]">ntkqypxvrljuihbxdrtx.supabase.co</code>
-            </p>
-            <div className="flex items-center gap-4 text-[11px] text-slate-400 mt-1">
-              <span>🔒 <strong>fotos-hd</strong>: Originales en alta para laboratorio</span>
-              <span>🌐 <strong>fotos-web</strong>: Muestras con marca de agua para padres</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={() => setShowConfigSupabase(!showConfigSupabase)}
-            className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold rounded-xl border border-slate-700 transition-colors flex items-center gap-1.5 cursor-pointer"
-          >
-            <Key className="w-3.5 h-3.5 text-amber-400" />
-            <span>{showConfigSupabase ? 'Ocultar Credenciales' : 'Configurar Anon Key'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Supabase credentials drawer */}
-      {showConfigSupabase && (
-        <form onSubmit={handleGuardarConfigSupabase} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
-          <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
-            Credenciales de Conexión de Supabase Storage
-          </h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-700">Project URL</label>
-              <input
-                type="text"
-                value={urlInput}
-                onChange={(e) => setUrlInput(e.target.value)}
-                placeholder="https://ntkqypxvrljuihbxdrtx.supabase.co"
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-mono text-xs"
-              />
-            </div>
-            <div className="space-y-1">
-              <label className="text-[11px] font-semibold text-slate-700">Supabase Anon Key</label>
-              <input
-                type="text"
-                value={anonKeyInput}
-                onChange={(e) => setAnonKeyInput(e.target.value)}
-                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-                className="w-full px-3 py-1.5 rounded-lg border border-slate-300 font-mono text-xs"
-              />
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer"
-            >
-              Guardar Configuración en el Navegador
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                const sqlScript = `-- Ejecutar en Supabase SQL Editor para configurar los buckets:
-INSERT INTO storage.buckets (id, name, public) 
-VALUES ('fotos-web', 'fotos-web', true) 
-ON CONFLICT (id) DO UPDATE SET public = true;
-
-INSERT INTO storage.buckets (id, name, public) 
-VALUES ('fotos-hd', 'fotos-hd', false) 
-ON CONFLICT (id) DO NOTHING;
-
--- Políticas de acceso
-CREATE POLICY "Lectura publica fotos-web" 
-ON storage.objects FOR SELECT 
-USING (bucket_id = 'fotos-web');
-
-CREATE POLICY "Subida fotos-web" 
-ON storage.objects FOR INSERT 
-WITH CHECK (bucket_id = 'fotos-web');
-
-CREATE POLICY "Subida fotos-hd" 
-ON storage.objects FOR INSERT 
-WITH CHECK (bucket_id = 'fotos-hd');
-
-CREATE POLICY "Lectura fotos-hd" 
-ON storage.objects FOR SELECT 
-USING (bucket_id = 'fotos-hd');`;
-                navigator.clipboard.writeText(sqlScript);
-                setStatusMessage('¡Script SQL copiado al portapapeles! Pegalo en el SQL Editor de tu Supabase Pro.');
-                setTimeout(() => setStatusMessage(null), 4000);
-              }}
-              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
-            >
-              📋 Copiar SQL para Crear Buckets en Supabase
-            </button>
-          </div>
-        </form>
       )}
 
       {/* Course & Batch Selection Controls */}

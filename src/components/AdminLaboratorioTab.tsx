@@ -24,7 +24,7 @@ interface AdminLaboratorioTabProps {
 export default function AdminLaboratorioTab({
   pedidos,
   onActualizarPedidos,
-  colegioNombre = 'Colegio San Martín de Tours (Nivel Inicial)'
+  colegioNombre = 'Instituto Divino Pastor'
 }: AdminLaboratorioTabProps) {
   const [cursoFiltro, setCursoFiltro] = useState<string>('todos');
   const [modoEstructuraCarpetas, setModoEstructuraCarpetas] = useState<'solo_2_carpetas_tamano' | 'por_alumno'>('solo_2_carpetas_tamano');

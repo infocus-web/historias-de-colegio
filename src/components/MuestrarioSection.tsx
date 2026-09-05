@@ -18,11 +18,12 @@ export default function MuestrarioSection({ onSelectKit }: MuestrarioSectionProp
 
   const contentByTab = {
     individual: {
-      titulo: 'Retratos espontáneos con luz natural',
+      titulo: 'Retratos profesionales con iluminación de estudio',
       descripcion:
-        'Buscamos la sonrisa natural de cada alumno. Sin flashes molestos ni poses congeladas. Hacemos varias tomas para que la familia elija su favorita.',
+        'Trabajamos con flashes profesionales de estudio para garantizar una iluminación perfecta, nítida y constante que nunca falla. Realizamos varias tomas para capturar la sonrisa auténtica de cada alumno y que la familia elija su foto favorita.',
       imagen: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=1200&q=85',
       specs: [
+        'Iluminación profesional con flashes de estudio: nitidez y colorimetría impecables',
         'Múltiples tomas para elegir en la galería online',
         'Impresión en papel fotográfico satinado 15x21 cm de 260 gramos',
         'Colores vivos y corrección de color profesional',

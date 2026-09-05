@@ -110,7 +110,10 @@ export function buscarSeccionPorCodigo(codigo: string): { seccion: SeccionEscola
     }
   }
 
-  // Also check if matches section ID or generic JARDIN26
+  // Also check if matches institution access codes
+  if (clean === 'PASTOR26' || clean === 'PASTOR2026' || clean === 'DIVINOPASTOR' || clean === 'PASTOR') {
+    return { seccion: SECCIONES_INICIAL_2026[0], codigoValido: 'PASTOR26' };
+  }
   if (clean === 'JARDIN26' || clean === 'JARDIN2026') {
     return { seccion: SECCIONES_INICIAL_2026[0], codigoValido: 'JARDIN26' };
   }
@@ -131,7 +134,7 @@ export function getMensajeWhatsAppParaCurso(seccion: SeccionEscolar, codigo: str
 ⏰ *Turno:* ${seccion.turno} · *División:* ${seccion.division}
 
 Pueden ingresar al portal para ver la muestra protegida con marca de agua y elegir las *3 fotos que están incluidas en el paquete*:
-👉 https://historiasdecolegio.com.ar
+👉 https://retratoescolar.com.ar
 
 *Opciones disponibles:*
 1️⃣ *Impresiones de laboratorio:* Incluye carpeta personalizada + fotos impresas + *los 3 archivos en HD de regalo para descargar*.

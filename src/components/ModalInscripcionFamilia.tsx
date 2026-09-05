@@ -13,21 +13,32 @@ import {
   GraduationCap,
   Clock,
   School,
-  AlertCircle
+  AlertCircle,
+  MessageCircle,
+  Key,
+  ExternalLink,
+  Copy,
+  Check,
+  Send,
+  UserCheck
 } from 'lucide-react';
 import {
   InscripcionFamilia,
   guardarInscripcion,
   buscarFamiliaPorContacto,
   guardarFamiliaActiva,
-  obtenerInscripciones
+  obtenerInscripciones,
+  aprobarInscripcion,
+  generarEnlaceWhatsAppAprobacion,
+  generarMensajeWhatsAppAprobacion
 } from '../services/inscripcionesService';
 import { COLEGIOS_EJEMPLO } from '../data/colegiosData';
+import { buscarSeccionPorCodigo } from '../data/codigosCursos';
 
 interface ModalInscripcionFamiliaProps {
   isOpen: boolean;
   onClose: () => void;
-  onInscripcionExitosa: (familia: InscripcionFamilia) => void;
+  onInscripcionExitosa: (familia: InscripcionFamilia, codigoCurso?: string) => void;
 }
 
 export default function ModalInscripcionFamilia({
@@ -36,6 +47,8 @@ export default function ModalInscripcionFamilia({
   onInscripcionExitosa
 }: ModalInscripcionFamiliaProps) {
   const [tab, setTab] = useState<'registro' | 'login'>('registro');
+  const [paso, setPaso] = useState<'formulario' | 'solicitar_codigo'>('formulario');
+  const [familiaCreada, setFamiliaCreada] = useState<InscripcionFamilia | null>(null);
 
   // Form states for New Inscription
   const [padreNombre, setPadreNombre] = useState('');
@@ -46,7 +59,13 @@ export default function ModalInscripcionFamilia({
   const [turno, setTurno] = useState('Tarde');
   const [grado, setGrado] = useState('Sala 5 años');
   const [division, setDivision] = useState('Celeste');
-  const [colegioId, setColegioId] = useState('col-inicial-2026');
+  const [colegioId, setColegioId] = useState('col-divino-pastor');
+
+  // Code verification states in Step "solicitar_codigo"
+  const [codigoIngresado, setCodigoIngresado] = useState('');
+  const [codigoValidado, setCodigoValidado] = useState<{ seccionNombre: string; codigoValido: string } | null>(null);
+  const [codigoError, setCodigoError] = useState<string | null>(null);
+  const [mensajeCopiado, setMensajeCopiado] = useState(false);
 
   // Login states
   const [loginQuery, setLoginQuery] = useState('');
@@ -54,6 +73,27 @@ export default function ModalInscripcionFamilia({
 
   // Form errors
   const [formError, setFormError] = useState<string | null>(null);
+
+  // Auto-sync when photographer accepts in the admin panel
+  React.useEffect(() => {
+    const syncInscripcion = () => {
+      if (familiaCreada) {
+        const todas = obtenerInscripciones();
+        const encontrada = todas.find((i) => i.id === familiaCreada.id);
+        if (encontrada) {
+          setFamiliaCreada(encontrada);
+          if (encontrada.estado === 'aceptado' && encontrada.codigoAsignado) {
+            setCodigoIngresado(encontrada.codigoAsignado);
+            handleVerificarCodigo(encontrada.codigoAsignado);
+          }
+        }
+      }
+    };
+    window.addEventListener('infocus_inscripciones_updated', syncInscripcion);
+    return () => {
+      window.removeEventListener('infocus_inscripciones_updated', syncInscripcion);
+    };
+  }, [familiaCreada]);
 
   if (!isOpen) return null;
 
@@ -98,7 +138,49 @@ export default function ModalInscripcionFamilia({
       colegioNombre: colegioSeleccionado.nombre
     });
 
-    onInscripcionExitosa(nuevaFamilia);
+    setFamiliaCreada(nuevaFamilia);
+    setPaso('solicitar_codigo');
+  };
+
+  const handleVerificarCodigo = (codigoAProbar?: string) => {
+    const raw = codigoAProbar !== undefined ? codigoAProbar : codigoIngresado;
+    const clean = raw.trim().toUpperCase();
+    if (!clean) {
+      setCodigoError('Ingresá el código de curso provisto por la institución.');
+      setCodigoValidado(null);
+      return;
+    }
+
+    // 1. Search in course sections (e.g. SALA3TM, SALA4A, SALA5B...)
+    const match = buscarSeccionPorCodigo(clean);
+    if (match) {
+      setCodigoValidado({
+        seccionNombre: match.seccion.nombreCompleto,
+        codigoValido: match.codigoValido
+      });
+      setCodigoError(null);
+      return;
+    }
+
+    // 2. Search general school code (e.g. TOURS26, BDS2026, JARDIN26)
+    const colFound = COLEGIOS_EJEMPLO.find((c) => c.codigoAcceso.toUpperCase() === clean);
+    if (colFound) {
+      setCodigoValidado({
+        seccionNombre: `${colFound.nombre} (${grado} "${division}")`,
+        codigoValido: colFound.codigoAcceso
+      });
+      setCodigoError(null);
+      return;
+    }
+
+    setCodigoError(`El código "${raw}" no fue encontrado. Verificá si está bien escrito o solicitalo a la institución por WhatsApp.`);
+    setCodigoValidado(null);
+  };
+
+  const handleAccederConCodigo = () => {
+    if (!familiaCreada) return;
+    const cod = codigoValidado?.codigoValido || codigoIngresado.trim().toUpperCase();
+    onInscripcionExitosa(familiaCreada, cod);
   };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -113,10 +195,30 @@ export default function ModalInscripcionFamilia({
     const encontrada = buscarFamiliaPorContacto(loginQuery);
     if (encontrada) {
       guardarFamiliaActiva(encontrada);
-      onInscripcionExitosa(encontrada);
+      setFamiliaCreada(encontrada);
+      setPaso('solicitar_codigo');
     } else {
       setLoginError('No encontramos una inscripción con ese teléfono o correo. Verificá los datos o completá la pestaña "Inscribirme".');
     }
+  };
+
+  // Pre-configured WhatsApp message to request the course code
+  const alumnoDisplay = familiaCreada
+    ? `${familiaCreada.alumnoNombre} ${familiaCreada.alumnoApellido}`
+    : `${alumnoNombre} ${alumnoApellido}`;
+  const gradoDisplay = familiaCreada ? familiaCreada.grado : grado;
+  const divisionDisplay = familiaCreada ? familiaCreada.division : division;
+  const turnoDisplay = familiaCreada ? familiaCreada.turno : turno;
+  const tutorDisplay = familiaCreada ? familiaCreada.padreNombre : padreNombre;
+  const colegioDisplay = familiaCreada ? familiaCreada.colegioNombre : colegioSeleccionado.nombre;
+
+  const mensajeWhatsApp = `Hola, me acabo de inscribir en el portal de fotos escolares para mi hijo/a ${alumnoDisplay} de ${gradoDisplay} (División ${divisionDisplay}, Turno ${turnoDisplay}) en ${colegioDisplay}. Soy ${tutorDisplay}. ¿Me podrían facilitar el código de curso para poder acceder a ver las fotos? ¡Muchas gracias!`;
+  const urlWhatsApp = `https://wa.me/5491128625916?text=${encodeURIComponent(mensajeWhatsApp)}`;
+
+  const handleCopiarMensaje = () => {
+    navigator.clipboard.writeText(mensajeWhatsApp);
+    setMensajeCopiado(true);
+    setTimeout(() => setMensajeCopiado(false), 2500);
   };
 
   // Recent registrations on this device
@@ -132,19 +234,31 @@ export default function ModalInscripcionFamilia({
         <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white flex items-center justify-between border-b border-slate-800">
           <div className="flex items-center gap-3.5">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 flex items-center justify-center font-bold shadow-md shadow-amber-500/20 shrink-0">
-              <UserPlus className="w-6 h-6 stroke-[2.2]" />
+              {paso === 'solicitar_codigo' ? (
+                <Key className="w-6 h-6 stroke-[2.2]" />
+              ) : (
+                <UserPlus className="w-6 h-6 stroke-[2.2]" />
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-xl font-extrabold font-['Outfit'] tracking-tight">
-                  Inscripción de Familias
+                  {paso === 'solicitar_codigo'
+                    ? familiaCreada?.estado === 'aceptado'
+                      ? 'Código de Acceso Aprobado'
+                      : 'Ficha de Verificación del Fotógrafo'
+                    : 'Inscripción de Familias'}
                 </h2>
                 <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30">
                   Ciclo 2026
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-0.5">
-                Paso inicial para acceder a las fotos del curso de tu hijo/a
+                {paso === 'solicitar_codigo'
+                  ? familiaCreada?.estado === 'aceptado'
+                    ? 'Tu solicitud fue aprobada. Código despachado por WhatsApp y Email.'
+                    : 'Tu solicitud ya está en la ficha del fotógrafo para su aprobación con check'
+                  : 'Paso inicial para acceder a las fotos del curso de tu hijo/a'}
               </p>
             </div>
           </div>
@@ -158,43 +272,311 @@ export default function ModalInscripcionFamilia({
           </button>
         </div>
 
-        {/* Tab Switcher */}
-        <div className="bg-slate-100 p-2 border-b border-slate-200 flex gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              setTab('registro');
-              setFormError(null);
-            }}
-            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-              tab === 'registro'
-                ? 'bg-white text-slate-950 shadow-sm border border-slate-200/80'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <UserPlus className="w-4 h-4 text-amber-600" />
-            <span>Inscribirme (Crear usuario)</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setTab('login');
-              setLoginError(null);
-            }}
-            className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
-              tab === 'login'
-                ? 'bg-white text-slate-950 shadow-sm border border-slate-200/80'
-                : 'text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <LogIn className="w-4 h-4 text-sky-600" />
-            <span>Ya me inscribí (Ingresar)</span>
-          </button>
-        </div>
+        {/* Tab Switcher / Step indicator */}
+        {paso === 'solicitar_codigo' ? (
+          <div className="bg-amber-50/80 px-4 py-2.5 border-b border-amber-200/80 flex items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-full bg-emerald-500 text-white flex items-center justify-center text-[10px] font-bold">
+                ✓
+              </span>
+              <span className="text-slate-600 font-medium hidden sm:inline">1. Registro asentado</span>
+              <span className="text-slate-400">→</span>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-extrabold ${
+                familiaCreada?.estado === 'aceptado' ? 'bg-emerald-500 text-white' : 'bg-amber-500 text-slate-950'
+              }`}>
+                {familiaCreada?.estado === 'aceptado' ? '✓' : '2'}
+              </span>
+              <span className="font-extrabold text-amber-950">
+                {familiaCreada?.estado === 'aceptado'
+                  ? 'Código Aprobado y Despachado'
+                  : 'Aceptación en Ficha del Fotógrafo'}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPaso('formulario')}
+              className="text-[11px] font-semibold text-slate-600 hover:text-slate-900 underline cursor-pointer"
+            >
+              Editar datos
+            </button>
+          </div>
+        ) : (
+          <div className="bg-slate-100 p-2 border-b border-slate-200 flex gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setTab('registro');
+                setFormError(null);
+              }}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                tab === 'registro'
+                  ? 'bg-white text-slate-950 shadow-sm border border-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <UserPlus className="w-4 h-4 text-amber-600" />
+              <span>Inscribirme (Crear usuario)</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setTab('login');
+                setLoginError(null);
+              }}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                tab === 'login'
+                  ? 'bg-white text-slate-950 shadow-sm border border-slate-200/80'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <LogIn className="w-4 h-4 text-sky-600" />
+              <span>Ya me inscribí (Ingresar)</span>
+            </button>
+          </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-6">
-          {tab === 'registro' ? (
+          {paso === 'solicitar_codigo' ? (
+            /* Step: Contact school via WhatsApp to get the course code */
+            <div className="space-y-6 text-left">
+              {/* Registration confirmation banner */}
+              <div className="p-4 bg-gradient-to-r from-emerald-500/10 via-emerald-50 to-amber-50 border border-emerald-300 rounded-2xl flex items-start gap-3.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
+                  <CheckCircle2 className="w-6 h-6" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                      Inscripción Registrada
+                    </span>
+                    <span className="text-xs text-slate-500">Listo para el siguiente paso</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-extrabold text-slate-900 mt-1">
+                    ¡Hola {tutorDisplay}! Registramos a {alumnoDisplay}
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    {gradoDisplay} "{divisionDisplay}" · Turno {turnoDisplay} · {colegioDisplay}
+                  </p>
+                </div>
+              </div>
+
+              {/* Adaptive Card: Web Photographer Registration Sheet & Approval */}
+              {familiaCreada?.estado === 'aceptado' ? (
+                <div className="bg-gradient-to-b from-emerald-50 via-white to-emerald-50/50 border-2 border-emerald-400 rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/25">
+                      <CheckCircle2 className="w-7 h-7" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                          Aprobado por el Fotógrafo
+                        </span>
+                        <span className="text-xs text-emerald-800 font-semibold">Código Despachado</span>
+                      </div>
+                      <h4 className="text-lg font-black text-slate-900 font-['Outfit']">
+                        ¡Tu inscripción fue aceptada con éxito!
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                        El fotógrafo verificó la ficha y despachó tu <strong>Código de Curso</strong> por WhatsApp al <strong>{familiaCreada.telefonoWhatsApp}</strong> y por correo a <strong>{familiaCreada.email}</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Highlighted Code Box */}
+                  <div className="p-4 bg-emerald-500/10 border-2 border-emerald-300 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div>
+                      <span className="text-[10px] uppercase tracking-wider font-extrabold text-emerald-900 block">
+                        Tu Código de Curso para ver las fotos:
+                      </span>
+                      <span className="text-2xl sm:text-3xl font-black font-mono tracking-widest text-emerald-950">
+                        {familiaCreada.codigoAsignado || 'SALA5B'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const code = familiaCreada.codigoAsignado || 'SALA5B';
+                          navigator.clipboard.writeText(code);
+                          setMensajeCopiado(true);
+                          setTimeout(() => setMensajeCopiado(false), 2000);
+                        }}
+                        className="px-3.5 py-2.5 bg-white hover:bg-emerald-100 text-emerald-900 border border-emerald-300 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+                      >
+                        {mensajeCopiado ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                        <span>{mensajeCopiado ? 'Copiado' : 'Copiar código'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const code = familiaCreada.codigoAsignado || 'SALA5B';
+                          onInscripcionExitosa(familiaCreada, code);
+                        }}
+                        className="flex-1 sm:flex-initial px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                      >
+                        <span>Ingresar a ver fotos</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-gradient-to-b from-amber-50/90 via-white to-amber-50/50 border-2 border-amber-400/90 rounded-3xl p-5 sm:p-6 space-y-4 shadow-sm">
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-400 text-slate-950 flex items-center justify-center shrink-0 shadow-md shadow-amber-500/20">
+                      <UserCheck className="w-6 h-6 stroke-[2.2]" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-amber-500 text-slate-950">
+                          Ficha Web del Fotógrafo
+                        </span>
+                        <span className="text-xs text-amber-900 font-semibold flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                          Pendiente de aceptación
+                        </span>
+                      </div>
+                      <h4 className="text-base sm:text-lg font-black text-slate-900 font-['Outfit']">
+                        Tu solicitud ingresó a la Ficha de Inscriptos del Fotógrafo
+                      </h4>
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                        Para evitar que los mensajes se pierdan en el chat de WhatsApp, las inscripciones se gestionan desde la ficha web del panel fotógrafo. En cuanto el fotógrafo marque el <strong>check de aceptación</strong>, el sistema te enviará automáticamente tu <strong>Código de Curso</strong> por WhatsApp y por Email.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Dispatch Channels Summary */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                    <div className="p-3 bg-emerald-50/80 border border-emerald-200 rounded-2xl flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0">
+                        <Phone className="w-4 h-4" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <span className="text-[10px] font-bold text-emerald-900 uppercase block">Envío por WhatsApp:</span>
+                        <span className="text-xs font-black text-slate-900 truncate block">
+                          {familiaCreada?.telefonoWhatsApp || telefonoWhatsApp}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-sky-50/80 border border-sky-200 rounded-2xl flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-sky-500 text-white flex items-center justify-center shrink-0">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <div className="overflow-hidden">
+                        <span className="text-[10px] font-bold text-sky-900 uppercase block">Envío por Email:</span>
+                        <span className="text-xs font-black text-slate-900 truncate block">
+                          {familiaCreada?.email || email}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Enter course code received from school */}
+              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-5 sm:p-6 space-y-4">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <h4 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wide">
+                    ¿Ya te respondieron con tu Código de Curso?
+                  </h4>
+                </div>
+                <p className="text-xs text-slate-600">
+                  Ingresá el código de curso que te entregaron para desbloquear la galería y ver las fotos de tu hijo/a:
+                </p>
+
+                <div className="flex flex-col sm:flex-row gap-2.5">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={codigoIngresado}
+                      onChange={(e) => {
+                        setCodigoIngresado(e.target.value.toUpperCase());
+                        setCodigoError(null);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleVerificarCodigo();
+                        }
+                      }}
+                      placeholder="Ej: SALA3TM"
+                      className="w-full px-4 py-3 text-sm uppercase font-mono font-extrabold tracking-wider bg-white border-2 border-slate-300 rounded-xl focus:outline-hidden focus:ring-2 focus:ring-amber-400"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleVerificarCodigo()}
+                    className="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-amber-300 hover:text-white font-bold text-xs rounded-xl shadow-md transition-colors flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                  >
+                    <Key className="w-4 h-4" />
+                    <span>Validar Código</span>
+                  </button>
+                </div>
+
+                {/* Code Error */}
+                {codigoError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-700 flex items-start gap-2">
+                    <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Código no reconocido</p>
+                      <p className="mt-0.5">{codigoError}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Code Validated Success */}
+                {codigoValidado && (
+                  <div className="p-4 bg-emerald-50 border-2 border-emerald-300 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2.5">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                      <div>
+                        <p className="text-xs font-bold text-emerald-950">
+                          ¡Código de curso reconocido: <span className="font-mono font-black">{codigoValidado.codigoValido}</span>!
+                        </p>
+                        <p className="text-[11px] text-emerald-800">
+                          {codigoValidado.seccionNombre} · Galería lista para visualizar
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleAccederConCodigo}
+                      className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-98 shrink-0"
+                    >
+                      <span>Ver fotos de {familiaCreada?.alumnoNombre}</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Bottom navigation actions */}
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setPaso('formulario')}
+                  className="text-slate-500 hover:text-slate-800 underline font-medium cursor-pointer"
+                >
+                  ← Modificar datos de inscripción
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (familiaCreada) {
+                      onInscripcionExitosa(familiaCreada, codigoValidado?.codigoValido);
+                    }
+                  }}
+                  className="text-amber-800 hover:text-amber-950 font-bold underline cursor-pointer"
+                >
+                  Ingresar al portal para colocar el código luego →
+                </button>
+              </div>
+            </div>
+          ) : tab === 'registro' ? (
             <form onSubmit={handleRegistroSubmit} className="space-y-6">
               {/* Error Alert */}
               {formError && (
@@ -315,6 +697,19 @@ export default function ModalInscripcionFamilia({
                         </option>
                       ))}
                     </select>
+                    {colegioSeleccionado.website && (
+                      <p className="mt-1 text-[11px] text-slate-500 flex items-center gap-1.5">
+                        <span>Sitio oficial de la institución:</span>
+                        <a
+                          href={colegioSeleccionado.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-amber-700 hover:text-amber-900 font-semibold underline"
+                        >
+                          {colegioSeleccionado.website.replace('https://', '').replace('http://', '').replace(/\/$/, '')}
+                        </a>
+                      </p>
+                    )}
                   </div>
 
                   {/* Turno, Grado, División */}
@@ -374,6 +769,22 @@ export default function ModalInscripcionFamilia({
                 </div>
               </div>
 
+              {/* Information Notice: Photographer Web Sheet & Automated WhatsApp / Email dispatch */}
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-300 text-amber-950 text-xs flex items-start gap-3">
+                <UserCheck className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                    <span>Ficha de inscriptos en panel del fotógrafo:</span>
+                    <span className="text-[10px] bg-amber-200 text-amber-900 font-extrabold px-1.5 py-0.5 rounded">
+                      Control por Check
+                    </span>
+                  </p>
+                  <p className="text-slate-700 mt-0.5 leading-relaxed">
+                    Al completar esta inscripción, tus datos ingresan directamente a la <strong>ficha web de inscriptos</strong> del fotógrafo. Al revisarla y marcar el check de aceptación, el sistema te enviará automáticamente tu <strong>Código de Curso por WhatsApp y por Email</strong>, garantizando que nunca se pierda un mensaje.
+                  </p>
+                </div>
+              </div>
+
               {/* Security Privacy Notice */}
               <div className="flex items-start gap-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-500 text-[11px] leading-relaxed">
                 <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -388,7 +799,7 @@ export default function ModalInscripcionFamilia({
                 id="btn-confirmar-inscripcion"
                 className="w-full py-3.5 px-6 bg-gradient-to-r from-amber-400 via-amber-300 to-amber-400 hover:from-amber-300 hover:to-amber-200 text-slate-950 font-extrabold text-sm rounded-2xl shadow-lg shadow-amber-400/30 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98"
               >
-                <span>Completar Inscripción y Ver Fotos</span>
+                <span>Inscribirme y Registrar en Ficha del Fotógrafo</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
@@ -417,7 +828,7 @@ export default function ModalInscripcionFamilia({
                     />
                   </div>
                   <p className="text-[11px] text-slate-500">
-                    Si ya completaste la inscripción de tu hijo/a previamente, podés ingresar directamente ingresando tu número o correo.
+                    Si ya completaste la inscripción de tu hijo/a previamente, podés ingresar directamente ingresando tu número o correo. Luego necesitarás tu código de curso para ver las fotos.
                   </p>
 
                   <button
@@ -425,7 +836,7 @@ export default function ModalInscripcionFamilia({
                     className="w-full py-3 px-6 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <LogIn className="w-4 h-4" />
-                    <span>Ingresar a mis fotos</span>
+                    <span>Ingresar y solicitar código</span>
                   </button>
                 </div>
               </form>
@@ -442,7 +853,8 @@ export default function ModalInscripcionFamilia({
                         key={fam.id}
                         onClick={() => {
                           guardarFamiliaActiva(fam);
-                          onInscripcionExitosa(fam);
+                          setFamiliaCreada(fam);
+                          setPaso('solicitar_codigo');
                         }}
                         className="p-3.5 bg-white hover:bg-amber-50/60 border border-slate-200 hover:border-amber-300 rounded-xl transition-all flex items-center justify-between gap-3 cursor-pointer group shadow-xs"
                       >
@@ -461,7 +873,7 @@ export default function ModalInscripcionFamilia({
                         </div>
 
                         <div className="flex items-center gap-1 text-xs font-bold text-amber-700 group-hover:translate-x-0.5 transition-transform">
-                          <span>Entrar</span>
+                          <span>Continuar</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </div>
                       </div>

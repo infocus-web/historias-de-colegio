@@ -30,10 +30,13 @@ export default function App() {
     setInscripcionModalOpen(true);
   };
 
-  const handleInscripcionExitosa = (familia: InscripcionFamilia) => {
+  const handleInscripcionExitosa = (familia: InscripcionFamilia, codigoCurso?: string) => {
     setInscripcionModalOpen(false);
     if (familia.colegioId) {
       setSelectedColegioId(familia.colegioId);
+    }
+    if (codigoCurso) {
+      setSelectedCodigo(codigoCurso);
     }
     setFamiliasModalOpen(true);
   };
