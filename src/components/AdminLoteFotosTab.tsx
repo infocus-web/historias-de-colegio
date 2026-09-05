@@ -248,12 +248,50 @@ export default function AdminLoteFotosTab() {
               />
             </div>
           </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer"
-          >
-            Guardar Configuración en el Navegador
-          </button>
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <button
+              type="submit"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl transition-all shadow-xs cursor-pointer"
+            >
+              Guardar Configuración en el Navegador
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const sqlScript = `-- Ejecutar en Supabase SQL Editor para configurar los buckets:
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('fotos-web', 'fotos-web', true) 
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('fotos-hd', 'fotos-hd', false) 
+ON CONFLICT (id) DO NOTHING;
+
+-- Políticas de acceso
+CREATE POLICY "Lectura publica fotos-web" 
+ON storage.objects FOR SELECT 
+USING (bucket_id = 'fotos-web');
+
+CREATE POLICY "Subida fotos-web" 
+ON storage.objects FOR INSERT 
+WITH CHECK (bucket_id = 'fotos-web');
+
+CREATE POLICY "Subida fotos-hd" 
+ON storage.objects FOR INSERT 
+WITH CHECK (bucket_id = 'fotos-hd');
+
+CREATE POLICY "Lectura fotos-hd" 
+ON storage.objects FOR SELECT 
+USING (bucket_id = 'fotos-hd');`;
+                navigator.clipboard.writeText(sqlScript);
+                setStatusMessage('¡Script SQL copiado al portapapeles! Pegalo en el SQL Editor de tu Supabase Pro.');
+                setTimeout(() => setStatusMessage(null), 4000);
+              }}
+              className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors cursor-pointer"
+            >
+              📋 Copiar SQL para Crear Buckets en Supabase
+            </button>
+          </div>
         </form>
       )}
 

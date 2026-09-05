@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const DEFAULT_SUPABASE_URL = 'https://ntkqypxvrljuihbxdrtx.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'sb_publishable_94eG1ynOFoTUTPfcKgBwlw_rfhcRNbT';
 
 // Get keys from environment or localStorage for easy configuration from Admin panel
 export function getSupabaseConfig() {
@@ -12,7 +13,7 @@ export function getSupabaseConfig() {
 
   return {
     url: storedUrl || envUrl || DEFAULT_SUPABASE_URL,
-    anonKey: storedKey || envKey || ''
+    anonKey: storedKey || envKey || DEFAULT_SUPABASE_ANON_KEY
   };
 }
 
@@ -21,6 +22,7 @@ export function saveSupabaseConfig(url: string, anonKey: string) {
     if (url) localStorage.setItem('infocus_supabase_url', url.trim());
     if (anonKey) localStorage.setItem('infocus_supabase_anon_key', anonKey.trim());
   }
+  supabaseInstance = null;
 }
 
 let supabaseInstance: SupabaseClient | null = null;
