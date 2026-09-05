@@ -1,5 +1,6 @@
 import * as XLSX from 'xlsx';
 import { SeccionEscolar, ALUMNOS_NOMINA_2026 } from '../data/alumnosData';
+import { descargarLibroExcel, descargarBlobSeguro } from './excelDownloadHelper';
 
 export interface MensajeCursoInfo {
   seccion: SeccionEscolar;
@@ -213,27 +214,16 @@ export function descargarExcelLegibleColegio(
   ];
   XLSX.utils.book_append_sheet(wb, wsGuia, 'Instrucciones para el Colegio');
 
-  // Escribir archivo binario XLSX nativo
-  const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-  const blob = new Blob([wbout], {
-    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-  });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
+  // Escribir y descargar archivo binario XLSX nativo con fallback
   const nombreLimpio = colegioNombre.replace(/\s+/g, '_').toUpperCase();
-  a.download = `PLANILLA_FOTOS_ESCOLARES_2026_${nombreLimpio}.xlsx`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  descargarLibroExcel(wb, `PLANILLA_FOTOS_ESCOLARES_2026_${nombreLimpio}.xlsx`);
 }
 
 export const descargarExcelXLSX = descargarExcelLegibleColegio;
 
 /**
  * Exporta un CSV compatible con el Excel en español de Windows
- * usando punto y coma (;) como separador y \uFEFF para evitar caracteres corruptos como aÃ±os
+ * usando punto y coma (;) como separador y \uFEFF para evitar caracteres corruptos como años
  */
 export function descargarCSVEspañolCompatible(
   secciones: SeccionEscolar[],
@@ -265,12 +255,5 @@ export function descargarCSVEspañolCompatible(
 
   const csvContent = '\uFEFF' + [encabezados.join(';'), ...filas].join('\r\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `PLANILLA_CURSOS_EXCEL_${colegioNombre.replace(/\s+/g, '_')}_2026.csv`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  descargarBlobSeguro(blob, `PLANILLA_CURSOS_EXCEL_${colegioNombre.replace(/\s+/g, '_')}_2026.csv`);
 }

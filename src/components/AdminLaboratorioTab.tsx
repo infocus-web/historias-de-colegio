@@ -7,8 +7,10 @@ import {
 import { 
   PedidoEscolarCompleto, 
   descargarLoteLaboratorioZip, 
-  guardarPedidosEnStorage 
+  guardarPedidosEnStorage,
+  formatearCodigoCliente
 } from '../services/pedidosLabService';
+import { descargarLibroExcel } from '../services/excelDownloadHelper';
 import { SECCIONES_INICIAL_2026 } from '../data/alumnosData';
 import { CODIGOS_CURSOS_INICIALES } from '../data/codigosCursos';
 
@@ -138,55 +140,75 @@ export default function AdminLaboratorioTab({
     }
   };
 
-  // Re-send HD photos link by email
+  // Exportar planilla de control de pedidos a Excel (.XLSX)
   const handleExportarExcelLaboratorio = () => {
-    const wb = XLSX.utils.book_new();
-    const data = pedidosFiltrados.map((p, idx) => ({
-      'N°': idx + 1,
-      'ID Pedido': p.id,
-      'Fecha': p.fecha,
-      'Curso / Sala': p.seccionNombre,
-      'Alumno': `${p.alumnoApellido}, ${p.alumnoNombre}`,
-      'Tutor Responsable': p.tutorNombre,
-      'Teléfono': p.tutorTelefono,
-      'Email': p.tutorEmail,
-      'Kit Contratado': p.kitNombre,
-      'Cantidad Fotos': p.fotosSeleccionadas.length,
-      'Estado Pago': p.estadoPago.toUpperCase(),
-      'Importe Total': `$${p.total.toLocaleString('es-AR')}`,
-      'Subcarpeta Lab': `${p.seccionId.toUpperCase()}/${String(idx + 1).padStart(2, '0')}_${p.alumnoApellido.replace(/\s+/g, '_').toUpperCase()}_${p.alumnoNombre.replace(/\s+/g, '_').toUpperCase()}`
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws['!cols'] = [
-      { wch: 5 },
-      { wch: 18 },
-      { wch: 18 },
-      { wch: 25 },
-      { wch: 28 },
-      { wch: 25 },
-      { wch: 16 },
-      { wch: 26 },
-      { wch: 22 },
-      { wch: 15 },
-      { wch: 14 },
-      { wch: 15 },
-      { wch: 45 }
-    ];
-    XLSX.utils.book_append_sheet(wb, ws, 'Planilla de Control');
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([wbout], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `CONTROL_REVELADO_${colegioNombre.replace(/\s+/g, '_')}_${cursoFiltro}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setZipFeedbackMsg('¡Planilla de control para laboratorio exportada a Excel (.XLSX)!');
-    setTimeout(() => setZipFeedbackMsg(null), 3500);
+    try {
+      const wb = XLSX.utils.book_new();
+      const data = pedidosFiltrados.map((p, idx) => {
+        const codigoCliente = p.codigoAlumno || formatearCodigoCliente(p.cursoCodigo, p.alumnoNombre);
+        const listaArchivos = p.archivosParaLaboratorio && p.archivosParaLaboratorio.length > 0
+          ? p.archivosParaLaboratorio.map(a => `${a.tamanoImpresion}: ${a.nombreArchivoLab}`).join(' | ')
+          : '15x21 + 20x30';
+
+        return {
+          'N°': idx + 1,
+          'ID Pedido': p.id,
+          'Fecha': p.fecha,
+          'Código Cliente (Archivo Minilab)': codigoCliente,
+          'Curso / Sala': `${p.cursoCodigo} - ${p.grado} (${p.division})`,
+          'Turno': p.turno || 'Tarde',
+          'Alumno': p.alumnoNombre,
+          'N° Lista': p.alumnoNumeroLista || idx + 1,
+          'Tutor Responsable': p.tutorNombre,
+          'Teléfono': p.tutorTelefono,
+          'Email': p.tutorEmail,
+          'Kit Contratado': p.kitNombre,
+          'Cantidad Fotos': p.archivosParaLaboratorio?.length || 2,
+          'Archivos a Imprimir': listaArchivos,
+          'Estado Pago': p.estadoPago.toUpperCase(),
+          'Importe Total': `$${p.total.toLocaleString('es-AR')}`,
+          'Ubicación 15x21': `15x21/${codigoCliente}.jpg`,
+          'Ubicación 20x30': `20x30/${codigoCliente}.jpg`
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      ws['!cols'] = [
+        { wch: 5 },
+        { wch: 18 },
+        { wch: 18 },
+        { wch: 30 },
+        { wch: 22 },
+        { wch: 12 },
+        { wch: 26 },
+        { wch: 10 },
+        { wch: 22 },
+        { wch: 16 },
+        { wch: 26 },
+        { wch: 24 },
+        { wch: 15 },
+        { wch: 45 },
+        { wch: 14 },
+        { wch: 15 },
+        { wch: 26 },
+        { wch: 26 }
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, 'Planilla de Control');
+
+      const nombreArchivo = `PLANILLA_LABORATORIO_${colegioNombre.replace(/\s+/g, '_')}_${cursoFiltro}.xlsx`;
+      const ok = descargarLibroExcel(wb, nombreArchivo);
+
+      if (ok) {
+        setZipFeedbackMsg(`¡Planilla Excel exportada exitosamente: ${nombreArchivo}!`);
+      } else {
+        setZipFeedbackMsg('No se pudo iniciar la descarga de Excel. Por favor verifique los permisos de su navegador.');
+      }
+      setTimeout(() => setZipFeedbackMsg(null), 4000);
+    } catch (err) {
+      console.error('Error al exportar planilla Excel de laboratorio:', err);
+      setZipFeedbackMsg('Hubo un error al generar la planilla Excel.');
+      setTimeout(() => setZipFeedbackMsg(null), 4000);
+    }
   };
 
   const handleReenviarEmailHD = (pedido: PedidoEscolarCompleto) => {

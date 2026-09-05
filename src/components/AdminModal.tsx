@@ -23,6 +23,7 @@ import {
   generarGuiaWhatsAppColegioTexto,
   generarMensajeWhatsApp
 } from '../services/difusionEscolarService';
+import { descargarLibroExcel } from '../services/excelDownloadHelper';
 import AdminLaboratorioTab from './AdminLaboratorioTab';
 import AdminLoteFotosTab from './AdminLoteFotosTab';
 import { CircularImprimibleModal } from './CircularImprimibleModal';
@@ -86,49 +87,57 @@ export default function AdminModal({ isOpen, onClose, onProbarCodigo }: AdminMod
   const colegioActualNombre = colegiosList[0]?.nombre || 'Colegio San Martín de Tours';
 
   const handleDescargarExcelLegible = () => {
-    descargarExcelLegibleColegio(SECCIONES_INICIAL_2026, codigosMap, colegioActualNombre);
-    setCopiadoFeedback('¡Libro de Microsoft Excel (.XLSX) con 3 hojas descargado con éxito!');
-    setTimeout(() => setCopiadoFeedback(null), 3500);
+    try {
+      descargarExcelLegibleColegio(SECCIONES_INICIAL_2026, codigosMap, colegioActualNombre);
+      setCopiadoFeedback('¡Libro de Microsoft Excel (.XLSX) con 3 hojas descargado con éxito!');
+      setTimeout(() => setCopiadoFeedback(null), 3500);
+    } catch (err) {
+      console.error('Error al descargar Excel legible:', err);
+      setCopiadoFeedback('Hubo un inconveniente al generar el archivo Excel.');
+      setTimeout(() => setCopiadoFeedback(null), 3500);
+    }
   };
 
   const handleExportarNominaExcel = () => {
-    const wb = XLSX.utils.book_new();
-    const data = alumnosFiltradosAdmin.map((a, idx) => ({
-      'N°': idx + 1,
-      'Apellido': a.apellido,
-      'Nombre': a.nombre,
-      'Curso / Sala': a.grado,
-      'Turno': a.turno,
-      'División': a.division,
-      'Código de Acceso': codigosMap[a.seccionId] || a.seccionId,
-      'Fotos Incluidas en Paquete': '3 tomas (Retrato, Grupo, Docente)'
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws['!cols'] = [
-      { wch: 6 },
-      { wch: 22 },
-      { wch: 22 },
-      { wch: 26 },
-      { wch: 12 },
-      { wch: 10 },
-      { wch: 20 },
-      { wch: 35 }
-    ];
-    XLSX.utils.book_append_sheet(wb, ws, 'Nómina Alumnos');
-    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-    const blob = new Blob([wbout], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `NOMINA_ALUMNOS_${colegioActualNombre.replace(/\s+/g, '_')}_${filtroSeccionAlumnos}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setCopiadoFeedback('¡Nómina de alumnos exportada a Excel (.XLSX) exitosamente!');
-    setTimeout(() => setCopiadoFeedback(null), 3000);
+    try {
+      const wb = XLSX.utils.book_new();
+      const data = alumnosFiltradosAdmin.map((a, idx) => ({
+        'N°': idx + 1,
+        'Apellido': a.apellido,
+        'Nombre': a.nombre,
+        'Curso / Sala': a.grado,
+        'Turno': a.turno,
+        'División': a.division,
+        'Código de Acceso': codigosMap[a.seccionId] || a.seccionId,
+        'Fotos Incluidas en Paquete': '3 tomas (Retrato, Grupo, Docente)'
+      }));
+      const ws = XLSX.utils.json_to_sheet(data);
+      ws['!cols'] = [
+        { wch: 6 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 26 },
+        { wch: 12 },
+        { wch: 10 },
+        { wch: 20 },
+        { wch: 35 }
+      ];
+      XLSX.utils.book_append_sheet(wb, ws, 'Nómina Alumnos');
+
+      const nombreArchivo = `NOMINA_ALUMNOS_${colegioActualNombre.replace(/\s+/g, '_')}_${filtroSeccionAlumnos}.xlsx`;
+      const ok = descargarLibroExcel(wb, nombreArchivo);
+
+      if (ok) {
+        setCopiadoFeedback('¡Nómina de alumnos exportada a Excel (.XLSX) exitosamente!');
+      } else {
+        setCopiadoFeedback('No se pudo iniciar la descarga. Verifique los permisos de su navegador.');
+      }
+      setTimeout(() => setCopiadoFeedback(null), 3000);
+    } catch (err) {
+      console.error('Error al exportar nómina a Excel:', err);
+      setCopiadoFeedback('Hubo un inconveniente al exportar la nómina a Excel.');
+      setTimeout(() => setCopiadoFeedback(null), 3000);
+    }
   };
 
   const handleExportarCSVEspañol = () => {
